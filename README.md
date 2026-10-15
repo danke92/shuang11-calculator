@@ -129,10 +129,60 @@ cloudflared 会输出一个 `https://xxxx.trycloudflare.com` 形式的临时地�
 | Cloudflare Pages | 新建项目 → 上传 `dist/`（或连 Git 仓库，构建命令留空，输出目录 `dist`） |
 | Netlify | Drag & drop `dist/` 到 Netlify Drop |
 | Vercel | `vercel deploy dist --prod`，或把 `dist` 设为输出目录 |
-| GitHub Pages | 把 `dist/` 内容推到 `gh-pages` 分支 |
+| GitHub Pages | 用仓库内置脚本一键发布，见下方「发布到 GitHub Pages」 |
 | 任意虚拟主机 / 对象存储 | 直接把 `dist/` 里的文件传上去 |
 
 > 规则设置抽屉的改动存在各设备浏览器的 `localStorage` 里，**不会**在设备之间同步；换设备后是官方默认值。
+
+---
+
+## 发布到 GitHub Pages（固定网址）
+
+仓库里已经准备好了两个脚本，只需授权一次。
+
+### 一次性准备
+
+```powershell
+gh auth login          # 选 GitHub.com → SSH → 浏览器授权，令牌只存本机
+```
+
+SSH key 需已添加到 GitHub（本机 `~/.ssh/id_ed25519` 已配好，且 `~/.ssh/config` 里让
+`github.com` 走 `ssh.github.com:443`，规避 22 端口不稳定）。
+
+### 一键发布
+
+```powershell
+.\tools\deploy-github.ps1                     # 默认仓库名 shuang11-calculator
+.\tools\deploy-github.ps1 -Repo my-site       # 换仓库名
+```
+
+脚本会依次：检查登录 → `node tools/build.js` 构建 → 校验 `gh-pages` 分支内容 →
+用 `gh repo create` 建仓库（已存在则跳过）→ 配置 `origin` 为 SSH → 推送 `main` 与 `gh-pages`
+→ 调 API 开启 Pages。完成后输出网址：
+
+```
+https://<你的用户名>.github.io/shuang11-calculator/
+```
+
+### 以后更新内容
+
+```powershell
+node tools/build.js          # 重建 dist/
+.\tools\publish-pages.ps1    # 用最新 dist/ 刷新 gh-pages 并推送（内部也会自动构建）
+```
+
+`publish-pages.ps1` 用**临时索引**把 `dist/` 写成一次提交后再推送，
+不会动你当前的工作区，也不会把 `dist/` 提交进 `main`。
+
+### 仓库结构约定
+
+| 分支 | 内容 | 用途 |
+| --- | --- | --- |
+| `main` | 源码（`index.html`、`styles.css`、`js/`、`design/`、`tools/`、README） | 开发与留档 |
+| `gh-pages` | `dist/` 构建产物（`index.html` 在根目录） | GitHub Pages 直接发布 |
+
+Pages 的发布源请设为 **分支 `gh-pages` / 目录 `/ (root)`**（脚本已尝试自动设置，
+失败时到仓库 Settings → Pages 手动选一次即可）。
 
 ---
 
