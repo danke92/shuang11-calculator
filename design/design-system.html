@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设计系统 · 双11 减免计算器</title>
+<style>
+:root {
+  --ink: #1b1035; --ink-2: #4a4066; --ink-3: #7c7391; --ink-4: #aea8c0;
+  --line: #e8e4f2; --bg: #f6f4fb; --card: #ffffff;
+  --brand: #ff3b30; --brand-2: #ff6b35; --brand-3: #ffb43b;
+  --accent: #7b2ff7; --accent-strong: #5f16d6; --accent-soft: #f4eeff; --accent-line: #e4daff;
+  --ok: #10b981; --warn: #f59e0b; --info: #3b82f6;
+  --tm: #ff5000; --tm-deep: #c23a00;
+  --jd: #e1251b; --jd-deep: #c8161d;
+  --pdd: #e02e24; --pdd-deep: #c01f18;
+  --dy: #00d4c8; --dy-ink: #0b3a3a; --dy-deep: #0f766e;
+  --ok-ink: #064e3b; --warn-ink: #92400e; --brand-ink: #c23a00;
+  --sh-sm: 0 2px 8px rgba(49,24,96,.06);
+  --sh-md: 0 10px 30px rgba(49,24,96,.08);
+  --sh-lg: 0 18px 40px rgba(43,11,77,.30);
+  --sh-accent: 0 8px 20px rgba(123,47,247,.30);
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-pill: 999px;
+}
+* { box-sizing: border-box; }
+html, body { max-width: 100%; overflow-x: hidden; }
+body {
+  margin: 0; color: var(--ink); background: var(--bg); line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.shell { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 26px; width: min(1240px, 100% - 40px); margin-inline: auto; padding: 26px 0 70px; }
+.shell > main { min-width: 0; }
+
+/* 顶栏 */
+.head {
+  background: linear-gradient(120deg, #2b0b4d 0%, #6c1a9c 42%, #ff3b30 100%);
+  color: #fff; padding: 22px 0; box-shadow: 0 8px 28px rgba(43,11,77,.28);
+}
+.head-in { width: min(1240px, 100% - 40px); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.head h1 { margin: 0; font-size: 21px; letter-spacing: -.2px; }
+.head p { margin: 3px 0 0; font-size: 12.5px; opacity: .82; }
+.head-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.head-tag { font-size: 11.5px; padding: 5px 11px; border-radius: var(--r-pill); background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(6px); }
+
+/* 侧栏目录 */
+.toc { position: sticky; top: 20px; align-self: start; font-size: 13px; }
+.toc-t { font-size: 11.5px; letter-spacing: 1.2px; color: var(--ink-3); font-weight: 700; margin-bottom: 8px; }
+.toc a { display: block; padding: 6px 10px; border-radius: var(--r-sm); color: var(--ink-2); text-decoration: none; border-left: 2px solid transparent; }
+.toc a:hover { background: #fff; color: var(--accent); border-left-color: var(--accent); }
+
+/* 区块 */
+.sec { margin-bottom: 26px; scroll-margin-top: 18px; }
+.sec > h2 { font-size: 17px; margin: 0 0 4px; display: flex; align-items: center; gap: 9px; }
+.sec > h2 .num { width: 26px; height: 26px; flex: 0 0 auto; border-radius: 8px; background: var(--accent); color: #fff; font-size: 13px; display: grid; place-items: center; }
+.sec > .sub { margin: 0 0 14px 35px; font-size: 12.5px; color: var(--ink-3); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 22px; box-shadow: var(--sh-md); }
+.card + .card { margin-top: 14px; }
+.card h3 { font-size: 14px; margin: 0 0 12px; color: var(--ink-2); }
+.card h3:not(:first-child) { margin-top: 22px; }
+
+/* 色板 */
+.sw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 12px; }
+.sw { border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: #fff; }
+.sw-chip { height: 54px; display: flex; align-items: flex-end; padding: 7px 9px; font-size: 11px; font-weight: 700; }
+.sw-meta { padding: 8px 9px; }
+.sw-name { font-size: 12.5px; font-weight: 600; }
+.sw-hex { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.sw-use { font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+
+/* 字号标本 */
+.type-row { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 14px; align-items: baseline; padding: 12px 0; border-bottom: 1px dashed var(--line); }
+.type-row:last-child { border-bottom: 0; }
+.type-k { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.type-k b { display: block; color: var(--ink-2); font-size: 12px; }
+
+/* 通用行 */
+.rowline { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.gap8 { gap: 8px; }
+.mt14 { margin-top: 14px; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* 按钮 */
+.btn-primary, .btn-ghost, .chip-btn { font-family: inherit; cursor: pointer; transition: .18s; border-radius: var(--r-md); }
+.btn-primary { background: var(--accent); color: #fff; border: 1px solid transparent; padding: 12px 20px; font-size: 14px; font-weight: 700; box-shadow: var(--sh-accent); }
+.btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+.btn-primary:active { transform: none; box-shadow: 0 4px 12px rgba(123,47,247,.26); }
+.btn-ghost { background: #fff; color: var(--accent); border: 1px solid var(--line); padding: 11px 18px; font-size: 13.5px; font-weight: 600; }
+.btn-ghost:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.chip-btn { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); border-radius: var(--r-pill); padding: 6px 13px; font-size: 12.5px; font-weight: 600; }
+.chip-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary[disabled], .btn-ghost[disabled], .chip-btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px rgba(123,47,247,.28); border-color: var(--accent);
+}
+
+/* 平台标签 */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { border: 1px solid var(--line); background: #fff; color: var(--ink-2); padding: 8px 16px; border-radius: var(--r-pill); font-size: 13.5px; font-weight: 600; font-family: inherit; cursor: pointer; transition: .18s; }
+.tab .tag { font-weight: 400; opacity: .75; font-size: 11.5px; margin-left: 6px; }
+.tab.on-tm { background: var(--tm); border-color: transparent; color: #fff; }
+.tab.on-tm2 { background: var(--tm-deep); border-color: transparent; color: #fff; }
+.tab.on-jd { background: var(--jd); border-color: transparent; color: #fff; }
+.tab.on-pdd { background: var(--pdd); border-color: transparent; color: #fff; }
+.tab.on-dy { background: var(--dy); border-color: transparent; color: var(--dy-ink); }
+.tab.on-dy2 { background: var(--dy-deep); border-color: transparent; color: #fff; }
+
+/* 表单 */
+.field { display: grid; gap: 6px; max-width: 340px; }
+.field > label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.inp-wrap { position: relative; }
+.inp-wrap .unit { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-3); font-size: 13px; }
+.inp { width: 100%; height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r-md); font-size: 14px; font-family: inherit; color: var(--ink); background: #fff; font-variant-numeric: tabular-nums; }
+.inp.with-unit { padding-left: 30px; }
+.inp::placeholder { color: var(--ink-4); }
+.help { font-size: 12.5px; color: var(--ink-3); margin: 0; }
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
+.switch input { appearance: none; width: 44px; height: 26px; border-radius: var(--r-pill); background: #ddd7ea; position: relative; cursor: pointer; transition: .18s; margin: 0; }
+.switch input::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: .18s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { left: 21px; }
+
+/* 价格卡 */
+.result-card { background: linear-gradient(135deg, #2b0b4d, #6c1a9c 55%, #ff3b30); color: #fff; border-radius: var(--r-lg); padding: 22px; box-shadow: var(--sh-lg); max-width: 470px; }
+.rc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.rc-label { margin: 0; font-size: 13px; opacity: .78; letter-spacing: 1px; }
+.rc-price { margin: 4px 0 2px; font-size: 42px; font-weight: 800; line-height: 1.1; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.rc-price .cur { font-size: 22px; margin-right: 3px; opacity: .9; }
+.rc-sub { margin: 0; font-size: 12.5px; opacity: .78; }
+.rc-badge { flex: 0 0 auto; text-align: center; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.28); border-radius: var(--r-md); padding: 8px 12px; backdrop-filter: blur(6px); }
+.rc-badge b { display: block; font-size: 20px; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.rc-badge small { font-size: 11px; opacity: .82; }
+.bar { height: 8px; border-radius: var(--r-pill); background: rgba(255,255,255,.28); overflow: hidden; margin: 16px 0 7px; }
+.bar-seg { height: 100%; background: rgba(255,255,255,.92); border-radius: var(--r-pill); width: 71.7%; transition: width .3s ease-out; }
+.legend { font-size: 11.5px; opacity: .8; margin: 0; display: flex; gap: 14px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.dot-pay { background: rgba(255,255,255,.92); }
+.dot-cut { background: rgba(255,255,255,.34); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+.stat { background: rgba(255,255,255,.14); border-radius: var(--r-md); padding: 9px 11px; }
+.stat-k { display: block; font-size: 11.5px; opacity: .8; }
+.stat-v { display: block; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 明细行 */
+.steps { display: grid; gap: 9px; max-width: 560px; }
+.step { display: grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: 11px; align-items: start; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--sh-sm); }
+.step.off { opacity: .55; }
+.step-k { width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.step-name { font-size: 13.5px; font-weight: 600; }
+.step-why { font-size: 11.5px; color: var(--ink-3); }
+.step-amt { font-size: 14px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.amt-cut { color: var(--brand); }
+.amt-none { color: var(--ink-3); font-weight: 600; font-size: 12.5px; }
+.step-left { font-size: 11.5px; color: var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; }
+.pill-warn { display: inline-block; font-size: 11px; color: #92400e; background: #fef3c7; border-radius: var(--r-pill); padding: 1px 8px; margin-left: 6px; }
+
+/* 比价 */
+.cmp { display: grid; gap: 9px; max-width: 520px; }
+.cmp-item { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 11px; align-items: center; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-md); }
+.cmp-item.best { border-color: var(--ok); box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+.cmp-badge { width: 30px; height: 30px; border-radius: 7px; color: #fff; font-size: 12.5px; font-weight: 700; display: grid; place-items: center; }
+.cmp-name { font-size: 15px; font-weight: 600; }
+.cmp-mini { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cmp-price { font-size: 15px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.tag-best { display: inline-block; font-size: 10.5px; font-weight: 700; color: #065f46; background: #d1fae5; border-radius: var(--r-pill); padding: 1px 7px; margin-left: 7px; vertical-align: 1px; }
+
+/* 间距 / 圆角 / 阴影示例 */
+.demogrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.demo-box { border: 1px dashed var(--accent-line); background: var(--accent-soft); border-radius: var(--r-sm); display: grid; place-items: center; font-size: 11.5px; color: var(--accent); font-weight: 600; }
+.radii { display: flex; gap: 14px; flex-wrap: wrap; }
+.radius-demo { width: 76px; height: 76px; background: linear-gradient(135deg, var(--accent), var(--brand)); color: #fff; font-size: 11.5px; display: grid; place-items: center; font-weight: 700; }
+.shadows { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+.shadow-demo { background: #fff; border-radius: var(--r-md); padding: 16px; font-size: 12.5px; color: var(--ink-2); }
+
+/* 对比度表 */
+.table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.contrast { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px; }
+table.contrast th, table.contrast td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+table.contrast th { font-size: 12px; color: var(--ink-3); font-weight: 600; }
+table.contrast td.n { font-variant-numeric: tabular-nums; font-weight: 700; }
+.badge-aa { font-size: 11px; font-weight: 700; border-radius: var(--r-pill); padding: 2px 8px; }
+.badge-aa.a3 { background: #d1fae5; color: #065f46; }
+.badge-aa.a2 { background: #fef3c7; color: #92400e; }
+.badge-aa.no { background: #fee2e2; color: #991b1b; }
+
+/* 映射表 */
+.map { width: 100%; min-width: 460px; border-collapse: collapse; font-size: 12.5px; }
+.map th, .map td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.map th { color: var(--ink-3); font-weight: 600; font-size: 12px; }
+.map code { font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .toc { position: static; }
+  .toc a { display: inline-block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div class="head-in">
+    <div>
+      <h1>双11 减免计算器 · 设计系统</h1>
+      <p>色彩 / 字号 / 间距 / 组件状态 · 一屏对照的可视化规范</p>
+    </div>
+    <div class="head-tags">
+      <span class="head-tag">v1 · 2026-10-15</span>
+      <span class="head-tag">零依赖 · 可离线</span>
+      <span class="head-tag"><a href="../index.html" style="color:#fff;text-decoration:none">← 打开计算器</a></span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <nav class="toc">
+    <p class="toc-t">目录</p>
+    <a href="#s1">1 色彩系统</a>
+    <a href="#s2">2 字号阶梯</a>
+    <a href="#s3">3 间距 / 圆角 / 阴影</a>
+    <a href="#s4">4 按钮与交互</a>
+    <a href="#s5">5 表单控件</a>
+    <a href="#s6">6 价格卡</a>
+    <a href="#s7">7 明细行</a>
+    <a href="#s8">8 比价行</a>
+    <a href="#s9">9 无障碍对比度</a>
+    <a href="#s10">10 代码映射</a>
+  </nav>
+
+  <main>
+
+    <!-- 1 色彩 -->
+    <section class="sec" id="s1">
+      <h2><span class="num">1</span>色彩系统</h2>
+      <p class="sub">品牌紫负责「可交互」，大促红只负责「价值与紧迫」，中性紫灰负责阅读。</p>
+
+      <div class="card">
+        <h3>品牌与功能色</h3>
+        <div class="sw-grid">
+          <div class="sw"><div class="sw-chip" style="background:#7b2ff7;color:#fff">白字可读</div><div class="sw-meta"><div class="sw-name">--accent</div><div class="sw-hex">#7b2ff7</div><div class="sw-use">主按钮 / 选中 / 焦点环</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#5f16d6;color:#fff">hover</div><div class="sw-meta"><div class="sw-name">--accent-strong</div><div class="sw-hex">#5f16d6</div><div class="sw-use">紫色按钮 hover</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#f4eeff;color:#7b2ff7">soft</div><div class="sw-meta"><div class="sw-name">--accent-soft</div><div class="sw-hex">#f4eeff</div><div class="sw-use">chip / 序号方块底</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#ff3b30;color:#fff">大促红</div><div class="sw-meta"><div class="sw-name">--brand</div><div class="sw-hex">#ff3b30</div><div class="sw-use">优惠金额 / 折扣徽章</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#ff6b35;color:#fff">橙红</div><div class="sw-meta"><div class="sw-name">--brand-2</div><div class="sw-hex">#ff6b35</div><div class="sw-use">渐变中段 / 背景光晕</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#ffb43b;color:#5b3a00">点缀金</div><div class="sw-meta"><div class="sw-name">--brand-3</div><div class="sw-hex">#ffb43b</div><div class="sw-use">名次 / 限时提示</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#10b981;color:#fff">正向</div><div class="sw-meta"><div class="sw-name">--ok</div><div class="sw-hex">#10b981</div><div class="sw-use">达成门槛 / 最低价</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#f59e0b;color:#4a2c00">提醒</div><div class="sw-meta"><div class="sw-name">--warn</div><div class="sw-hex">#f59e0b</div><div class="sw-use">差一点到门槛</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#3b82f6;color:#fff">信息</div><div class="sw-meta"><div class="sw-name">--info</div><div class="sw-hex">#3b82f6</div><div class="sw-use">规则来源 / 外链</div></div></div>
+        </div>
+
+        <h3>中性色阶</h3>
+        <div class="sw-grid">
+          <div class="sw"><div class="sw-chip" style="background:#1b1035;color:#fff">正文标题</div><div class="sw-meta"><div class="sw-name">--ink</div><div class="sw-hex">#1b1035</div><div class="sw-use">价格 / 标题 16.3:1</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#4a4066;color:#fff">正文</div><div class="sw-meta"><div class="sw-name">--ink-2</div><div class="sw-hex">#4a4066</div><div class="sw-use">表单值 / 名称 9.9:1</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#7c7391;color:#fff">辅助</div><div class="sw-meta"><div class="sw-name">--ink-3</div><div class="sw-hex">#7c7391</div><div class="sw-use">help 文案 4.4:1</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#aea8c0;color:#fff">占位</div><div class="sw-meta"><div class="sw-name">--ink-4</div><div class="sw-hex">#aea8c0</div><div class="sw-use">仅 placeholder 2.3:1</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#e8e4f2;color:#4a4066">描边</div><div class="sw-meta"><div class="sw-name">--line</div><div class="sw-hex">#e8e4f2</div><div class="sw-use">分隔线 / 输入框边</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#f6f4fb;color:#4a4066">页面底</div><div class="sw-meta"><div class="sw-name">--bg</div><div class="sw-hex">#f6f4fb</div><div class="sw-use">浅紫灰底</div></div></div>
+        </div>
+
+        <h3>四平台识别色 —— 每个平台两个值：浅底(配深字) / 深底(配白字)</h3>
+        <div class="sw-grid">
+          <div class="sw"><div class="sw-chip" style="background:#ff5000;color:#fff">天猫原色 · 白字 3.3:1 ⚠️</div><div class="sw-meta"><div class="sw-name">--tm</div><div class="sw-hex">#ff5000</div><div class="sw-use">仅 ≥14px/700 可用</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#c23a00;color:#fff">天猫深 · 白字 5.4:1 ✅</div><div class="sw-meta"><div class="sw-name">--tm-deep</div><div class="sw-hex">#c23a00</div><div class="sw-use">标签推荐用这个</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#e1251b;color:#fff">京东 · 白字 4.7:1 ✅</div><div class="sw-meta"><div class="sw-name">--jd</div><div class="sw-hex">#e1251b</div><div class="sw-use">选中标签 / 色条</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#e02e24;color:#fff">拼多多 · 白字 4.6:1 ✅</div><div class="sw-meta"><div class="sw-name">--pdd</div><div class="sw-hex">#e02e24</div><div class="sw-use">与京东靠名称区分</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#00d4c8;color:#0b3a3a">抖音 · 深青字 6.7:1 ✅</div><div class="sw-meta"><div class="sw-name">--dy</div><div class="sw-hex">#00d4c8</div><div class="sw-use">青底禁止配白字（1.9:1）</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#0f766e;color:#fff">抖音深 · 白字 5.5:1 ✅</div><div class="sw-meta"><div class="sw-name">--dy-deep</div><div class="sw-hex">#0f766e</div><div class="sw-use">需要白字的场合</div></div></div>
+        </div>
+
+        <h3>「中性色」只做底，文字换深色版（实测踩坑点）</h3>
+        <div class="sw-grid">
+          <div class="sw"><div class="sw-chip" style="background:#10b981;color:#fff">白字 2.5:1 ❌ 别这么用</div><div class="sw-meta"><div class="sw-name">--ok 直接配白字</div><div class="sw-hex">#10b981 + #fff</div><div class="sw-use">不达标</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#d1fae5;color:#064e3b">浅底 + 深绿字 8.6:1 ✅</div><div class="sw-meta"><div class="sw-name">--ok 正确用法</div><div class="sw-hex">#d1fae5 / #064e3b</div><div class="sw-use">「最低」标签</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#fef3c7;color:#92400e">浅底 + 深棕字 6.4:1 ✅</div><div class="sw-meta"><div class="sw-name">--warn 正确用法</div><div class="sw-hex">#fef3c7 / #92400e</div><div class="sw-use">「差 ¥140」标签</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#fff5f4;color:#c23a00">浅红底 + 深红字 5.0:1 ✅</div><div class="sw-meta"><div class="sw-name">优惠金额替代方案</div><div class="sw-hex">#fff5f4 / #c23a00</div><div class="sw-use">小字号金额安全</div></div></div>
+        </div>
+
+        <h3>关键渐变</h3>
+        <div class="demogrid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+          <div style="height:64px;border-radius:var(--r-md);background:linear-gradient(120deg,#2b0b4d 0%,#6c1a9c 42%,#ff3b30 100%)"></div>
+          <div style="height:64px;border-radius:var(--r-md);background:linear-gradient(135deg,#2b0b4d,#6c1a9c 55%,#ff3b30)"></div>
+          <div style="height:64px;border-radius:var(--r-md);background:radial-gradient(1200px 500px at 12% -10%,rgba(255,107,53,.35),transparent 60%),radial-gradient(1000px 460px at 92% 0%,rgba(123,47,247,.35),transparent 62%),#f6f4fb"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 字号 -->
+    <section class="sec" id="s2">
+      <h2><span class="num">2</span>字号阶梯</h2>
+      <p class="sub">系统字体栈，不加载 webfont，保证离线可用；金额一律等宽数字。</p>
+      <div class="card">
+        <div class="type-row"><div class="type-k"><b>--fs-price</b>42px / 800 / -1px</div><div style="font-size:42px;font-weight:800;line-height:1.1;letter-spacing:-1px" class="mono">¥2,149.15</div></div>
+        <div class="type-row"><div class="type-k"><b>--fs-xl</b>20px / 700</div><div style="font-size:20px;font-weight:700">四平台对比结果</div></div>
+        <div class="type-row"><div class="type-k"><b>--fs-lg</b>17px / 700</div><div style="font-size:17px;font-weight:700">减免明细（按叠加顺序）</div></div>
+        <div class="type-row"><div class="type-k"><b>--fs-md</b>15px / 600</div><div style="font-size:15px;font-weight:600">淘宝 / 天猫 <span style="color:var(--ink-3);font-weight:400">¥2,149.15</span></div></div>
+        <div class="type-row"><div class="type-k"><b>--fs-base</b>14px / 400</div><div style="font-size:14px">满 1500 减 180，按当前金额 ¥2,549.15 判断达标</div></div>
+        <div class="type-row"><div class="type-k"><b>--fs-sm</b>13.5px / 500</div><div style="font-size:13.5px;font-weight:500">官方立减 / 官方直降</div></div>
+        <div class="type-row"><div class="type-k"><b>--fs-xs</b>12.5px / 400</div><div style="font-size:12.5px;color:var(--ink-3)">取消跨店满减，单件立减；勾选后自动按顺序叠加。</div></div>
+        <div class="type-row"><div class="type-k"><b>--fs-2xs</b>11.5px / 500</div><div style="font-size:11.5px;color:var(--ink-3)">数据来源：平台官方招商规则，仅供参考</div></div>
+      </div>
+    </section>
+
+    <!-- 3 间距圆角阴影 -->
+    <section class="sec" id="s3">
+      <h2><span class="num">3</span>间距 / 圆角 / 阴影</h2>
+      <p class="sub">间距 4 的倍数；圆角三档 + 胶囊；阴影代表层级，不叠加滥用。</p>
+      <div class="card">
+        <h3>间距刻度</h3>
+        <div class="demogrid">
+          <div class="demo-box" style="height:34px;padding:6px">4</div>
+          <div class="demo-box" style="height:42px;padding:8px">8</div>
+          <div class="demo-box" style="height:50px;padding:12px">12</div>
+          <div class="demo-box" style="height:54px;padding:16px">16</div>
+          <div class="demo-box" style="height:60px;padding:20px">20</div>
+          <div class="demo-box" style="height:66px;padding:24px">24</div>
+        </div>
+
+        <h3>圆角</h3>
+        <div class="radii">
+          <div class="radius-demo" style="border-radius:8px">--r-sm 8</div>
+          <div class="radius-demo" style="border-radius:12px">--r-md 12</div>
+          <div class="radius-demo" style="border-radius:16px">--r-lg 16</div>
+          <div class="radius-demo" style="border-radius:999px">pill 999</div>
+        </div>
+
+        <h3>阴影</h3>
+        <div class="shadows">
+          <div class="shadow-demo" style="box-shadow:var(--sh-sm)">--sh-sm　明细行 / 小控件</div>
+          <div class="shadow-demo" style="box-shadow:var(--sh-md)">--sh-md　普通卡片</div>
+          <div class="shadow-demo" style="box-shadow:var(--sh-lg);background:#2b0b4d;color:#fff">--sh-lg　价格卡</div>
+          <div class="shadow-demo" style="box-shadow:var(--sh-accent);background:var(--accent);color:#fff">--sh-accent　主按钮</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 按钮 -->
+    <section class="sec" id="s4">
+      <h2><span class="num">4</span>按钮与交互</h2>
+      <p class="sub">每个状态都能点：把鼠标移到按钮上即可看到 hover，按 Tab 可看到焦点环。</p>
+      <div class="card">
+        <h3>常态 / 禁用</h3>
+        <div class="rowline gap8">
+          <button class="btn-primary">生成四平台对比</button>
+          <button class="btn-ghost">恢复官方默认</button>
+          <button class="chip-btn">常见叠加（券 + 会员）</button>
+          <button class="btn-primary" disabled>生成四平台对比</button>
+          <button class="btn-ghost" disabled>恢复官方默认</button>
+          <button class="chip-btn" disabled>极限叠加</button>
+        </div>
+
+        <h3>平台标签（未选 / 选中）</h3>
+        <div class="tabs">
+          <button class="tab on-dy">抖音商城<span class="tag">抖音</span></button>
+          <button class="tab">淘宝 / 天猫</button>
+          <button class="tab">京东</button>
+          <button class="tab">拼多多<span class="tag">百亿补贴</span></button>
+        </div>
+        <div class="tabs mt14">
+          <button class="tab on-tm">天猫 原色（14px/700 勉强达标）</button>
+          <button class="tab on-tm2">天猫 深色版 #c23a00 ✅</button>
+          <button class="tab on-jd">京东 #e1251b ✅</button>
+          <button class="tab on-pdd">拼多多 #e02e24 ✅</button>
+          <button class="tab on-dy2">抖音 深色版 #0f766e ✅</button>
+        </div>
+        <p class="help mt14">选中态用平台色铺底，但<b>文字颜色必须按底色选</b>：抖音青底固定配 <code>#0b3a3a</code> 深青字（6.7:1）；天猫原色配白字只有 3.28:1，推荐换 <code>#c23a00</code> 深橙（5.4:1）或把字号提到 14px/700 以上。</p>
+      </div>
+    </section>
+
+    <!-- 5 表单 -->
+    <section class="sec" id="s5">
+      <h2><span class="num">5</span>表单控件</h2>
+      <p class="sub">高度 42px，焦点用紫色 3px 光环；单位不使用 placeholder 冒充。</p>
+      <div class="card">
+        <div class="rowline" style="align-items:flex-start;gap:22px">
+          <div class="field">
+            <label for="d1">商品标价 / 报名价（元）</label>
+            <div class="inp-wrap"><span class="unit">¥</span><input class="inp with-unit mono" id="d1" value="2999" inputmode="decimal"></div>
+            <p class="help">填商品详情页上的划线价或大促报名价。</p>
+          </div>
+          <div class="field">
+            <label for="d2">折扣率（%）</label>
+            <input class="inp mono" id="d2" value="85" inputmode="decimal">
+            <p class="help">官方立减 8.5 折起。</p>
+          </div>
+          <div class="field">
+            <label for="d3">占位 / 禁用示例</label>
+            <input class="inp" id="d3" placeholder="请输入金额">
+            <input class="inp" value="不可编辑" disabled style="margin-top:6px;color:var(--ink-4);background:#faf9fd">
+          </div>
+        </div>
+
+        <h3>开关</h3>
+        <div class="rowline gap8" style="gap:20px">
+          <label class="switch"><input type="checkbox" checked>官方立减 / 官方直降</label>
+          <label class="switch"><input type="checkbox">国家以旧换新补贴（国补）</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 价格卡 -->
+    <section class="sec" id="s6">
+      <h2><span class="num">6</span>价格卡（结果区主角）</h2>
+      <p class="sub">紫色渐变承载「最终答案」，右端透红提供大促感但不压倒数字。</p>
+      <div class="card">
+        <div class="result-card">
+          <div class="rc-head">
+            <div>
+              <p class="rc-label">预计到手价</p>
+              <p class="rc-price"><span class="cur">¥</span>2,149.15</p>
+              <p class="rc-sub">天猫 · 标价 ¥2,999.00 × 1 件 · 共减 ¥849.85</p>
+            </div>
+            <div class="rc-badge"><b>7.2 折</b><small>到手折扣</small></div>
+          </div>
+          <div class="bar"><div class="bar-seg"></div></div>
+          <p class="legend"><span><span class="dot dot-pay"></span>实付</span><span><span class="dot dot-cut"></span>总优惠</span></p>
+          <div class="stats">
+            <div class="stat"><span class="stat-k">优惠合计</span><span class="stat-v">¥849.85</span></div>
+            <div class="stat"><span class="stat-k">省下比例</span><span class="stat-v">28.3%</span></div>
+            <div class="stat"><span class="stat-k">单件到手价</span><span class="stat-v">¥2,149.15</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 明细行 -->
+    <section class="sec" id="s7">
+      <h2><span class="num">7</span>明细行（叠加过程）</h2>
+      <p class="sub">四段式：层级方块 → 名称与算法 → 扣减金额（右对齐等宽）→ 剩余金额；未生效层压暗并写明原因。</p>
+      <div class="card">
+        <div class="steps">
+          <div class="step">
+            <span class="step-k">官</span>
+            <div><div class="step-name">官方立减 / 官方直降</div><div class="step-why">官方立减 8.5 折：¥2,999.00 × 15% = ¥449.85</div></div>
+            <div><div class="step-amt amt-cut">-¥449.85</div><div class="step-left">余 ¥2,549.15</div></div>
+          </div>
+          <div class="step">
+            <span class="step-k">券</span>
+            <div><div class="step-name">平台加补券 / 品类券</div><div class="step-why">满 1,500 减 180，按当前金额 ¥2,549.15 判断达标</div></div>
+            <div><div class="step-amt amt-cut">-¥180.00</div><div class="step-left">余 ¥2,369.15</div></div>
+          </div>
+          <div class="step">
+            <span class="step-k">会</span>
+            <div><div class="step-name">88VIP 专享消费券<span class="pill-warn">差 ¥140 到门槛</span></div><div class="step-why">满 480 减 60：当前 ¥340.00 未达门槛，本层不生效</div></div>
+            <div><div class="step-amt amt-none">未生效</div><div class="step-left">余 ¥340.00</div></div>
+          </div>
+          <div class="step off">
+            <span class="step-k">补</span>
+            <div><div class="step-name">国家以旧换新补贴（国补）</div><div class="step-why">未启用国补</div></div>
+            <div><div class="step-amt amt-none">未生效</div><div class="step-left">—</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 比价 -->
+    <section class="sec" id="s8">
+      <h2><span class="num">8</span>比价行（四平台对比）</h2>
+      <p class="sub">最低价用绿色描边 + 文字标签双重标识，不只靠颜色；价格右对齐便于竖列比较。</p>
+      <div class="card">
+        <div class="cmp">
+          <div class="cmp-item best">
+            <span class="cmp-badge" style="background:var(--tm)">天</span>
+            <div><div class="cmp-name">淘宝 / 天猫<span class="tag-best">最低</span></div><div class="cmp-mini">标价 ¥2,999.00 · 省 ¥849.85（28.3%）</div></div>
+            <div><div class="cmp-price">¥2,149.15</div><div class="cmp-mini">单件 ¥2,149.15</div></div>
+          </div>
+          <div class="cmp-item">
+            <span class="cmp-badge" style="background:var(--dy);color:#0b3a3a">抖</span>
+            <div><div class="cmp-name">抖音商城</div><div class="cmp-mini">标价 ¥2,999.00 · 省 ¥839.85（28.0%）</div></div>
+            <div><div class="cmp-price">¥2,159.15</div><div class="cmp-mini">单件 ¥2,159.15</div></div>
+          </div>
+          <div class="cmp-item">
+            <span class="cmp-badge" style="background:var(--jd)">京</span>
+            <div><div class="cmp-name">京东</div><div class="cmp-mini">标价 ¥2,999.00 · 省 ¥690.00（23.0%）</div></div>
+            <div><div class="cmp-price">¥2,309.00</div><div class="cmp-mini">单件 ¥2,309.00</div></div>
+          </div>
+          <div class="cmp-item">
+            <span class="cmp-badge" style="background:var(--pdd)">百</span>
+            <div><div class="cmp-name">拼多多<span class="tag" style="font-size:11px;color:var(--ink-3)">百亿补贴</span></div><div class="cmp-mini">标价 ¥2,999.00 · 省 ¥420.00（14.0%）</div></div>
+            <div><div class="cmp-price">¥2,579.00</div><div class="cmp-mini">单件 ¥2,579.00</div></div>
+          </div>
+        </div>
+        <p class="help mt14">比价已按各平台默认玩法自动套用：官方立减率 / 直降、会员折扣、国补封顶，并把用户填的券面额换算成各平台最接近的档位。各平台券面规则不同，结果仅供决策参考。</p>
+      </div>
+    </section>
+
+    <!-- 9 对比度 -->
+    <section class="sec" id="s9">
+      <h2><span class="num">9</span>无障碍与对比度</h2>
+      <p class="sub">按 WCAG 2.1 相对亮度公式实算；标 ❌ 的组合禁止承载信息。</p>
+      <div class="card">
+        <div class="table-scroll">
+        <table class="contrast">
+          <thead><tr><th>前景 / 背景</th><th>对比度</th><th>结论</th><th>允许用途</th></tr></thead>
+          <tbody>
+            <tr><td>--ink #1b1035 / 白</td><td class="n">17.9:1</td><td><span class="badge-aa a3">AAA</span></td><td>标题、价格、正文</td></tr>
+            <tr><td>--ink-2 #4a4066 / 白</td><td class="n">9.5:1</td><td><span class="badge-aa a3">AAA</span></td><td>正文、表单值</td></tr>
+            <tr><td>--ink-2 #4a4066 / --accent-soft #f4eeff</td><td class="n">8.4:1</td><td><span class="badge-aa a3">AAA</span></td><td>chip 内正文</td></tr>
+            <tr><td>白 / --accent-strong #5f16d6</td><td class="n">8.2:1</td><td><span class="badge-aa a3">AAA</span></td><td>按钮 hover</td></tr>
+            <tr><td>白 / --accent #7b2ff7</td><td class="n">5.9:1</td><td><span class="badge-aa a2">AA</span></td><td>主按钮、选中标签</td></tr>
+            <tr><td>--accent #7b2ff7 / --accent-soft #f4eeff</td><td class="n">5.2:1</td><td><span class="badge-aa a2">AA</span></td><td>序号方块、chip 文字</td></tr>
+            <tr><td>白 / --tm-deep #c23a00</td><td class="n">5.4:1</td><td><span class="badge-aa a2">AA</span></td><td>天猫标签（推荐）</td></tr>
+            <tr><td>白 / --jd #e1251b</td><td class="n">4.7:1</td><td><span class="badge-aa a2">AA</span></td><td>京东选中标签</td></tr>
+            <tr><td>白 / --pdd #e02e24</td><td class="n">4.6:1</td><td><span class="badge-aa a2">AA</span></td><td>拼多多选中标签</td></tr>
+            <tr><td>--ink-3 #7c7391 / 白</td><td class="n">4.45:1</td><td><span class="badge-aa a2">AA</span></td><td>≥13px 辅助文案；不用于关键金额</td></tr>
+            <tr><td>#0b3a3a / --dy #00d4c8</td><td class="n">6.7:1</td><td><span class="badge-aa a2">AA</span></td><td>抖音选中标签（深青字）</td></tr>
+            <tr><td>白 / --dy-deep #0f766e</td><td class="n">5.5:1</td><td><span class="badge-aa a2">AA</span></td><td>抖音标签的深底版本</td></tr>
+            <tr><td>#064e3b / #d1fae5（最低价标签）</td><td class="n">8.6:1</td><td><span class="badge-aa a3">AAA</span></td><td>比价「最低」标签</td></tr>
+            <tr><td>#92400e / #fef3c7（门槛提示）</td><td class="n">6.4:1</td><td><span class="badge-aa a2">AA</span></td><td>「差 ¥140」警示</td></tr>
+            <tr><td>#c23a00 / #fff5f4（优惠金额替代）</td><td class="n">5.0:1</td><td><span class="badge-aa a2">AA</span></td><td>小字号金额安全方案</td></tr>
+            <tr><td>白 / --brand #ff3b30</td><td class="n">3.55:1</td><td><span class="badge-aa no">大字</span></td><td>仅 ≥16px/700 的金额或徽章大字</td></tr>
+            <tr><td>白 / --tm #ff5000</td><td class="n">3.28:1</td><td><span class="badge-aa no">大字</span></td><td>需 ≥14px/700，否则换 #c23a00</td></tr>
+            <tr><td>白 / --ok #10b981</td><td class="n">2.54:1</td><td><span class="badge-aa no">不可用</span></td><td>绿色只做底/边框，文字用 #064e3b</td></tr>
+            <tr><td>--ink-4 #aea8c0 / 白</td><td class="n">2.29:1</td><td><span class="badge-aa no">不可用</span></td><td>仅 placeholder / 禁用态</td></tr>
+            <tr><td>白 / --dy #00d4c8</td><td class="n">1.87:1</td><td><span class="badge-aa no">不可用</span></td><td>抖音青底禁止配白字</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>其他硬性要求</h3>
+        <ul class="help" style="line-height:1.9">
+          <li><b>中性色只做底</b>：#ff5000 / #00d4c8 / #10b981 这类「不上不下」的颜色，其上文字统一换成深色版（#c23a00 / #0b3a3a / #064e3b）。</li>
+          <li>可点击元素必须有 <code>:focus-visible</code> 焦点环（紫色 3px），不允许 <code>outline:none</code> 裸奔。</li>
+          <li>状态不单靠颜色：门槛未达配「差 ¥140」文字，最低价配「最低」标签。</li>
+          <li>触控目标 ≥ 44×44px；标签与 chip 已达标，窄屏不再缩小。</li>
+          <li><code>prefers-reduced-motion: reduce</code> 时全部过渡降为 0.01ms。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 10 映射 -->
+    <section class="sec" id="s10">
+      <h2><span class="num">10</span>代码映射（规范 → 现有实现）</h2>
+      <p class="sub">设计资产不是另起一套，全部能在现有文件里找到落点。</p>
+      <div class="card">
+        <div class="table-scroll">
+        <table class="map">
+          <thead><tr><th>设计资产</th><th>现有实现位置</th></tr></thead>
+          <tbody>
+            <tr><td>色彩 / 圆角 / 阴影 token</td><td><code>styles.css</code> 顶部 <code>:root</code>（第 4–18 行）</td></tr>
+            <tr><td>顶栏品牌渐变</td><td><code>styles.css</code> <code>.topbar</code></td></tr>
+            <tr><td>价格卡</td><td><code>styles.css</code> <code>.result-card</code></td></tr>
+            <tr><td>平台标签</td><td><code>styles.css</code> <code>.tab</code> / <code>.tab[aria-selected]</code> + <code>js/rules.js</code> 的 <code>color</code></td></tr>
+            <tr><td>明细行</td><td><code>js/app.js</code> <code>renderSteps()</code> 输出 <code>.step</code></td></tr>
+            <tr><td>比价行</td><td><code>js/app.js</code> <code>renderCompare()</code> 输出 <code>.compare-item</code></td></tr>
+            <tr><td>场景 chip</td><td><code>styles.css</code> <code>.chip-btn</code> + <code>js/app.js</code> <code>applyPreset()</code></td></tr>
+            <tr><td>响应式断点</td><td><code>styles.css</code> 的 <code>@media (max-width:940px)</code> / <code>(max-width:560px)</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>落地顺序建议</h3>
+        <ol class="help" style="line-height:1.9">
+          <li>补齐 <code>:root</code> token（保持现有变量名不变，避免影响渲染逻辑）。</li>
+          <li>明细行金额加 <code>font-variant-numeric: tabular-nums</code>（收益最大的单条改动）。</li>
+          <li>统一 <code>:focus-visible</code> 焦点环。</li>
+          <li><code>--ink-4</code> 收敛到 placeholder / disabled。</li>
+          <li>加 <code>prefers-reduced-motion</code> 降级。</li>
+        </ol>
+        <p class="help mt14">完整规范见 <a href="DESIGN.md" style="color:var(--accent)">DESIGN.md</a>。</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

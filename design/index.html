@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>双11 减免计算器 · 设计交付</title>
+<style>
+:root {
+  --ink: #1b1035; --ink-2: #4a4066; --ink-3: #7c7391; --ink-4: #aea8c0;
+  --line: #e8e4f2; --bg: #f6f4fb; --card: #fff;
+  --brand: #ff3b30; --accent: #7b2ff7; --accent-strong: #5f16d6; --accent-soft: #f4eeff; --accent-line: #e4daff;
+  --ok: #10b981; --sh-md: 0 10px 30px rgba(49,24,96,.08); --sh-lg: 0 18px 40px rgba(43,11,77,.30);
+  --sh-accent: 0 8px 20px rgba(123,47,247,.30);
+  --r-md: 12px; --r-lg: 16px; --r-pill: 999px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; color: var(--ink); line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1200px 480px at 10% -12%, rgba(255,107,53,.16), transparent 60%),
+    radial-gradient(1000px 440px at 94% -4%, rgba(123,47,247,.16), transparent 62%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { width: min(1120px, 100% - 36px); margin-inline: auto; }
+
+/* 头图 */
+.hero { background: linear-gradient(120deg, #2b0b4d 0%, #6c1a9c 42%, #ff3b30 100%); color: #fff; padding: 34px 0 30px; box-shadow: 0 10px 30px rgba(43,11,77,.28); }
+.hero-in { display: flex; align-items: center; justify-content: space-between; gap: 22px; flex-wrap: wrap; }
+.logo { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #ff3b30, #ffb43b); display: grid; place-items: center; font-weight: 800; font-size: 15px; line-height: 1.05; text-align: center; box-shadow: 0 8px 20px rgba(255,59,48,.35); }
+.hero h1 { margin: 0; font-size: 25px; letter-spacing: -.4px; }
+.hero p { margin: 5px 0 0; font-size: 13px; opacity: .84; max-width: 620px; }
+.hero-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.hero-tag { font-size: 11.5px; padding: 5px 12px; border-radius: var(--r-pill); background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); backdrop-filter: blur(6px); }
+.hero-col { display: flex; align-items: center; gap: 14px; }
+
+/* 主体 */
+main { padding: 30px 0 60px; }
+.sec-t { display: flex; align-items: baseline; gap: 10px; margin: 0 0 4px; font-size: 17px; }
+.sec-t .num { width: 24px; height: 24px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 12.5px; display: grid; place-items: center; flex: 0 0 auto; }
+.sec-sub { margin: 0 0 16px 34px; font-size: 12.5px; color: var(--ink-3); }
+section { margin-bottom: 32px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.dcard { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--sh-md); overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; transition: .18s; }
+.dcard:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(49,24,96,.14); border-color: var(--accent-line); }
+.dcard-thumb { height: 172px; background: #f2eefb; overflow: hidden; position: relative; border-bottom: 1px solid var(--line); }
+.dcard-thumb img { width: 100%; display: block; }
+.dcard-thumb.is-code { display: grid; place-items: center; background: linear-gradient(135deg, #2b0b4d, #6c1a9c 60%, #ff3b30); color: #fff; text-align: center; padding: 18px; }
+.dcard-thumb.is-code b { font-size: 30px; display: block; line-height: 1.2; }
+.dcard-thumb.is-code span { font-size: 12px; opacity: .8; }
+.dcard-body { padding: 15px 17px 17px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.dcard-title { font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.dcard-title .k { font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: var(--r-pill); padding: 1px 8px; }
+.dcard-desc { font-size: 12.5px; color: var(--ink-3); flex: 1; }
+.dcard-go { font-size: 12.5px; font-weight: 700; color: var(--accent); }
+.dcard:hover .dcard-go { text-decoration: underline; }
+
+/* 规范要点 */
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.fact { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; box-shadow: var(--sh-sm, 0 2px 8px rgba(49,24,96,.06)); }
+.fact b { display: block; font-size: 13.5px; margin-bottom: 4px; }
+.fact p { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.swatch-row { display: flex; gap: 6px; margin-top: 9px; }
+.swatch { height: 22px; flex: 1; border-radius: 6px; }
+.steps-note { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; box-shadow: var(--sh-md); }
+.steps-note ol { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--ink-2); line-height: 2; }
+.steps-note code { font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+.foot { border-top: 1px solid var(--line); background: #fff; padding: 18px 0 26px; font-size: 12.5px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-col">
+      <div class="logo">11.11</div>
+      <div>
+        <h1>双11 减免计算器 · 设计交付</h1>
+        <p>一个离线可用的省钱工具站：四平台优惠规则逐层叠加，给出真实到手价与比价结果。</p>
+      </div>
+    </div>
+    <div class="hero-tags">
+      <span class="hero-tag">设计系统 v1</span>
+      <span class="hero-tag">纯静态 · 零依赖</span>
+      <span class="hero-tag">2026-10-15</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <h2 class="sec-t"><span class="num">1</span>交付物</h2>
+    <p class="sec-sub">可交互原型 + 可视化设计系统 + 文字规范，三份对照着看。</p>
+    <div class="grid">
+
+      <a class="dcard" href="../index.html">
+        <div class="dcard-thumb is-code">
+          <div>
+            <b>¥2,149.15</b>
+            <span>可交互原型 · 直接可用</span>
+          </div>
+        </div>
+        <div class="dcard-body">
+          <div class="dcard-title">计算器原型 <span class="k">可交互</span></div>
+          <p class="dcard-desc">四平台标签、逐层明细、一键场景、四平台比价、规则设置抽屉。改任何数字实时出到手价。</p>
+          <span class="dcard-go">打开 index.html →</span>
+        </div>
+      </a>
+
+      <a class="dcard" href="design-system.html">
+        <div class="dcard-thumb"><img src="preview-designsystem.png" alt="设计系统预览"></div>
+        <div class="dcard-body">
+          <div class="dcard-title">设计系统 <span class="k">可视化</span></div>
+          <p class="dcard-desc">色板、字号阶梯、间距圆角阴影、按钮与表单的全部状态、价格卡 / 明细行 / 比价行组件规格、对比度实测表。</p>
+          <span class="dcard-go">打开 design-system.html →</span>
+        </div>
+      </a>
+
+      <a class="dcard" href="DESIGN.md">
+        <div class="dcard-thumb is-code" style="background:linear-gradient(135deg,#1b1035,#4a4066 60%,#7b2ff7)">
+          <div>
+            <b>DESIGN.md</b>
+            <span>规范全文 · 10 节</span>
+          </div>
+        </div>
+        <div class="dcard-body">
+          <div class="dcard-title">设计规范文档 <span class="k">Markdown</span></div>
+          <p class="dcard-desc">设计原则、token 全表、组件状态矩阵、布局栅格、动效、无障碍要求、与现有代码的逐条映射和落地顺序。</p>
+          <span class="dcard-go">打开 DESIGN.md →</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-t"><span class="num">2</span>视觉基调</h2>
+    <p class="sec-sub">「可信的数字 + 大促氛围 + 长时间阅读不累」，高饱和色只出现在两处。</p>
+    <div class="facts">
+      <div class="fact">
+        <b>品牌紫 · 可交互</b>
+        <p>#7b2ff7 —— 主按钮、选中标签、焦点环。白字对比度 5.9:1。</p>
+        <div class="swatch-row"><span class="swatch" style="background:#7b2ff7"></span><span class="swatch" style="background:#5f16d6"></span><span class="swatch" style="background:#f4eeff"></span></div>
+      </div>
+      <div class="fact">
+        <b>大促红 · 价值感</b>
+        <p>#ff3b30 只用于 ≥16px/700 的优惠金额与折扣徽章；小字改用 #c23a00（5.0:1）。</p>
+        <div class="swatch-row"><span class="swatch" style="background:#ff3b30"></span><span class="swatch" style="background:#ff6b35"></span><span class="swatch" style="background:#ffb43b"></span></div>
+      </div>
+      <div class="fact">
+        <b>中性紫灰 · 阅读</b>
+        <p>近黑标题 17.9:1，正文 9.5:1；浅紫灰底比纯灰更贴合品牌。</p>
+        <div class="swatch-row"><span class="swatch" style="background:#1b1035"></span><span class="swatch" style="background:#4a4066"></span><span class="swatch" style="background:#e8e4f2"></span></div>
+      </div>
+      <div class="fact">
+        <b>平台识别色 · 辅助</b>
+        <p>天猫 #ff5000（标签建议 #c23a00）/ 京东 #e1251b / 拼多多 #e02e24 / 抖音 #00d4c8（配深青字）。颜色不单独承载信息。</p>
+        <div class="swatch-row"><span class="swatch" style="background:#ff5000"></span><span class="swatch" style="background:#e1251b"></span><span class="swatch" style="background:#e02e24"></span><span class="swatch" style="background:#00d4c8"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-t"><span class="num">3</span>五个关键设计决策</h2>
+    <p class="sec-sub">每一条都是为了这个工具的特定使用场景，而不是通用美化。</p>
+    <div class="facts">
+      <div class="fact"><b>数字等宽对齐</b><p>金额统一 <code>tabular-nums</code>，明细里的「扣减 / 剩余」竖列对齐才好核对。</p></div>
+      <div class="fact"><b>价格卡固定吸附</b><p>桌面 sticky 在右栏顶部；窄屏整卡镜像到输入区顶部，改参数立刻见价格。</p></div>
+      <div class="fact"><b>过程可复核</b><p>每层写清「怎么算、达标没、还剩多少」，未生效层压暗但不隐藏。</p></div>
+      <div class="fact"><b>不替用户下结论</b><p>比价只排序 + 标最低价，不写「推荐买 X」，避免误导消费决策。</p></div>
+      <div class="fact"><b>状态不只靠颜色</b><p>门槛未达配「差 ¥140」文字，最低价配「最低」标签，色盲用户同样可读。</p></div>
+      <div class="fact"><b>两档断点</b><p>940px 双栏转单栏，560px 紧凑档（内边距 14px、价格 34px）。</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-t"><span class="num">4</span>落地顺序</h2>
+    <p class="sec-sub">改动都很小，按收益从高到低排。</p>
+    <div class="steps-note">
+      <ol>
+        <li>把 token 全表补进 <code>styles.css</code> 的 <code>:root</code>（现有变量名保持不变）。</li>
+        <li>明细行金额加 <code>font-variant-numeric: tabular-nums</code> —— 单条改动，视觉收益最大。</li>
+        <li>给 <code>input / select / button / .tab / .chip-btn</code> 补统一 <code>:focus-visible</code> 焦点环。</li>
+        <li><code>--ink-4</code> 使用范围收敛到 placeholder 与禁用态。</li>
+        <li>加 <code>prefers-reduced-motion: reduce</code> 全局降级。</li>
+      </ol>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">设计资产与计算器源码同目录：<code>shuang11-calculator/</code>，其中 <code>design/</code> 为本设计交付。原型与设计系统均为纯静态文件，双击即可离线预览。</div>
+</footer>
+
+</body>
+</html>

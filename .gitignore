@@ -1,0 +1,13 @@
+# 构建产物（由 tools/build.js 生成，部署到 gh-pages 分支，主分支不跟踪）
+dist/
+
+# 隧道客户端是大文件，不进仓库（用 tools/README 里的方式重新下载）
+tools/bin/
+
+# 开发时抓的截图
+tools/*.png
+
+# 系统垃圾
+Thumbs.db
+desktop.ini
+.DS_Store
