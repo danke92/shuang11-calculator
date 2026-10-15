@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双11 减免计算器 · 四大平台到手价精算</title>
+<meta name="description" content="淘宝天猫 / 京东 / 拼多多 / 抖音双11优惠叠加计算器：官方立减、店铺券、品类券、PLUS 95折、88VIP消费券、红包、以旧换新、国补，按平台规则顺序逐层扣减，算出真实到手价。">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="logo">11.11</span>
+      <div>
+        <h1>双11 减免计算器</h1>
+        <p class="brand-sub">按平台规则逐层叠加 · 算出真实到手价</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="rules-badge" id="rulesBadge">规则版本 · 2026</span>
+      <button type="button" class="btn ghost" id="btnRules">规则设置</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs-wrap">
+  <div class="wrap">
+    <div class="tabs" id="platformTabs" role="tablist"></div>
+  </div>
+</nav>
+
+<main class="wrap layout">
+
+  <!-- 右栏：结果 -->
+  <section class="col-result" id="colResult">
+    <div class="result-card" id="resultCard">
+      <div class="result-head">
+        <div>
+          <p class="result-label">预计到手价</p>
+          <p class="result-price"><span class="cur">¥</span><span id="finalPrice">--</span></p>
+          <p class="result-sub" id="resultSub">填写左侧信息后自动计算</p>
+        </div>
+        <div class="result-badge" id="discountBadge">--</div>
+      </div>
+
+      <div class="bar" id="barWrap">
+        <div class="bar-seg" id="barFinal"></div>
+      </div>
+      <p class="bar-legend"><span class="dot dot-pay"></span>实付 <span class="dot dot-cut"></span>总优惠</p>
+
+      <div class="stat-row">
+        <div class="stat"><span class="stat-k">优惠合计</span><span class="stat-v" id="totalSaved">¥0</span></div>
+        <div class="stat"><span class="stat-k">省下比例</span><span class="stat-v" id="savedPct">0%</span></div>
+        <div class="stat"><span class="stat-k">单件到手价</span><span class="stat-v" id="unitPrice">¥0</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">减免明细（按叠加顺序）</h2>
+      <ol class="steps" id="steps"></ol>
+      <p class="empty" id="stepsEmpty">勾选左侧任意优惠项，这里会逐层显示扣减过程。</p>
+    </div>
+
+    <div class="card" id="tipsCard">
+      <h2 class="card-title">省钱提示</h2>
+      <ul class="tips" id="tips"></ul>
+    </div>
+
+    <div class="card" id="compareCard" hidden>
+      <h2 class="card-title">四平台对比结果</h2>
+      <div class="compare-list" id="compareList"></div>
+      <p class="hint" id="compareNote"></p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">本平台规则摘要</h2>
+      <div class="rule-summary" id="ruleSummary"></div>
+    </div>
+  </section>
+  <!-- 左栏：输入 -->
+  <section class="col-input" id="colInput">
+
+    <div class="card">
+      <h2 class="card-title">① 商品信息</h2>
+      <div class="field">
+        <label for="price">商品标价 / 报名价（元）</label>
+        <div class="input-money">
+          <span>¥</span>
+          <input type="number" id="price" min="0" step="0.01" value="2999" inputmode="decimal">
+        </div>
+        <p class="hint">填商品详情页上的划线价或大促报名价，下面所有优惠都在这个数字上扣。</p>
+      </div>
+
+      <div class="field">
+        <label for="category">商品品类</label>
+        <select id="category">
+          <option value="general">一般商品（服饰 / 日用 / 美妆…）</option>
+          <option value="digital">手机 / 平板 / 智能穿戴（国补单件封顶 500）</option>
+          <option value="computer">电脑 / 笔记本（国补单件封顶 1500）</option>
+          <option value="appliance">家电（国补单件封顶 1500）</option>
+        </select>
+        <p class="hint">品类决定国家以旧换新补贴的封顶额度，也决定部分品类券是否可用。</p>
+      </div>
+
+      <div class="field">
+        <label for="qty">购买件数</label>
+        <input type="number" id="qty" min="1" step="1" value="1" inputmode="numeric">
+        <p class="hint">多件时按「单价优惠 × 件数」估算，满减门槛按单件金额判断。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">② 可用优惠</h2>
+      <p class="card-sub" id="platformHint">按当前平台规则填写，勾选后自动按顺序叠加。</p>
+
+      <div class="presets" id="presets">
+        <span class="presets-k">一键套用场景</span>
+        <button type="button" class="chip-btn" data-preset="base">只算官方立减</button>
+        <button type="button" class="chip-btn" data-preset="coupon">常见叠加（券 + 会员）</button>
+        <button type="button" class="chip-btn" data-preset="full">极限叠加（含国补 / 以旧换新）</button>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="officialOn" checked>
+          <span class="slider"></span>
+          <span class="switch-label">官方立减 / 官方直降</span>
+        </label>
+        <div class="inline-inputs" id="officialInputs">
+          <label class="mini rate-only"><span class="mini-label">折扣率</span>
+            <input type="number" id="officialRate" min="50" max="100" step="0.5" value="85"><span class="unit">%</span>
+          </label>
+          <span class="or rate-only">或</span>
+          <label class="mini cut-only">直接减
+            <input type="number" id="officialCut" min="0" step="1" placeholder="元"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint" id="officialHint"></p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="storeOn">
+          <span class="slider"></span>
+          <span class="switch-label">店铺券 / 店铺满减</span>
+        </label>
+        <div class="inline-inputs" id="storeInputs">
+          <label class="mini">满
+            <input type="number" id="storeThreshold" min="0" step="1" value="1000"><span class="unit">元</span>
+          </label>
+          <label class="mini">减
+            <input type="number" id="storeCut" min="0" step="1" value="100"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">店铺券门槛按「官方立减后的金额」判断，不够门槛则本层不生效。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="categoryCouponOn">
+          <span class="slider"></span>
+          <span class="switch-label">平台品类券 / 加补券</span>
+        </label>
+        <div class="inline-inputs" id="categoryCouponInputs">
+          <label class="mini">满
+            <input type="number" id="categoryThreshold" min="0" step="1" value="1500"><span class="unit">元</span>
+          </label>
+          <label class="mini">减
+            <input type="number" id="categoryCut" min="0" step="1" value="180"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">淘宝「领券中心」、京东品类神券、抖音消费券都填这里；同级券通常互斥，只算一张。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="voucherOn">
+          <span class="slider"></span>
+          <span class="switch-label" id="voucherLabel">88VIP 专享券</span>
+        </label>
+        <div class="inline-inputs">
+          <select id="voucherSelect"></select>
+        </div>
+        <p class="hint" id="voucherHint"></p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="memberOn">
+          <span class="slider"></span>
+          <span class="switch-label" id="memberLabel">PLUS 会员折扣</span>
+        </label>
+        <div class="inline-inputs" id="memberInputs">
+          <label class="mini">会员折扣
+            <input type="number" id="memberRate" min="50" max="100" step="0.5" value="95"><span class="unit">%</span>
+          </label>
+          <label class="mini">会员券减
+            <input type="number" id="memberCouponCut" min="0" step="1" value="0"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint" id="memberHint"></p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="redPacketOn">
+          <span class="slider"></span>
+          <span class="switch-label">平台红包 / 无门槛券</span>
+        </label>
+        <div class="inline-inputs" id="redPacketInputs">
+          <label class="mini">红包金额
+            <input type="number" id="redPacketAmount" min="0" step="1" value="60"><span class="unit">元</span>
+          </label>
+          <label class="mini">可叠加张数
+            <input type="number" id="redPacketCount" min="1" step="1" value="1"><span class="unit">张</span>
+          </label>
+        </div>
+        <p class="hint">京东每日惊喜红包、淘宝超级红包等；无门槛，通常可多张叠加使用。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="subsidyOn">
+          <span class="slider"></span>
+          <span class="switch-label">国家以旧换新补贴（国补）</span>
+        </label>
+        <div class="inline-inputs" id="subsidyInputs">
+          <label class="mini">补贴比例
+            <input type="number" id="subsidyRate" min="0" max="100" step="0.5" value="15"><span class="unit">%</span>
+          </label>
+          <label class="mini">封顶
+            <input type="number" id="subsidyCap" min="0" step="50" value="500"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">国补按「券 / 红包 / 会员折扣后的实付金额」核算，补贴额再封顶。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="tradeInOn">
+          <span class="slider"></span>
+          <span class="switch-label">旧机折抵 / 以旧换新回收价</span>
+        </label>
+        <div class="inline-inputs">
+          <label class="mini">折抵金额
+            <input type="number" id="tradeInAmount" min="0" step="10" value="0"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">旧机回收款直接抵扣，不计入国补核算基数。</p>
+      </div>
+    </div>
+
+    <div class="card minor">
+      <h2 class="card-title">③ 比价</h2>
+      <button type="button" class="btn primary block" id="btnCompare">生成四平台对比</button>
+      <p class="hint">用同一件商品的参数，分别按四个平台的规则算出到手价并排序。</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p>规则数据来源于各平台 2026 年双 11 公开的招商规则与官方活动说明（见「规则设置」内附来源链接），仅供估算参考。</p>
+    <p>实际到手价以结算页为准：券的门槛、互斥关系、地址国补资格、会员身份都会影响最终金额。</p>
+  </div>
+</footer>
+
+<!-- 规则设置抽屉 -->
+<div class="drawer-mask" id="drawerMask" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-labelledby="drawerTitle">
+  <div class="drawer-head">
+    <h2 id="drawerTitle">规则设置</h2>
+    <button type="button" class="btn ghost sm" id="btnCloseDrawer">关闭</button>
+  </div>
+  <div class="drawer-body">
+    <p class="hint">各平台官方立减率、国补默认比例等都可在此调整；改动会保存在本机浏览器（localStorage），随时可恢复官方默认值。</p>
+    <form id="ruleForm" class="rule-form"></form>
+
+    <h3 class="drawer-h3">规则来源</h3>
+    <ul class="sources" id="sourceList"></ul>
+
+    <div class="drawer-actions">
+      <button type="button" class="btn primary" id="btnSaveRules">保存设置</button>
+      <button type="button" class="btn ghost" id="btnResetRules">恢复官方默认</button>
+    </div>
+  </div>
+</aside>
+
+<script src="js/rules.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

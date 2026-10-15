@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<!-- 双11 减免计算器 · 单文件离线版
+     CSS/JS 已全部内联，无需网络、无需服务器，双击本文件即可使用。
+     由 tools/build.js 生成于 2026-10-15，请勿直接编辑本文件。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双11 减免计算器 · 四大平台到手价精算</title>
+<meta name="description" content="淘宝天猫 / 京东 / 拼多多 / 抖音双11优惠叠加计算器：官方立减、店铺券、品类券、PLUS 95折、88VIP消费券、红包、以旧换新、国补，按平台规则顺序逐层扣减，算出真实到手价。">
+<style>
+/* ==========================================================================
+   双11 减免计算器 · 样式
+   ========================================================================== */
+:root {
+  --ink: #1b1035;
+  --ink-2: #4a4066;
+  --ink-3: #7c7391;
+  --line: #e8e4f2;
+  --bg: #f6f4fb;
+  --card: #ffffff;
+  --brand: #ff3b30;
+  --brand-2: #ff6b35;
+  --brand-3: #ffb43b;
+  --accent: #7b2ff7;
+  --ok: #10b981;
+  --shadow: 0 10px 30px rgba(49, 24, 96, .08);
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 500px at 12% -10%, rgba(255, 107, 53, .16), transparent 60%),
+    radial-gradient(1000px 460px at 92% 0%, rgba(123, 47, 247, .16), transparent 62%),
+    var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { width: min(1180px, 100% - 32px); margin-inline: auto; }
+
+/* ---------------------------------------------------------------- 顶栏 */
+.topbar {
+  background: linear-gradient(120deg, #2b0b4d 0%, #6c1a9c 42%, #ff3b30 100%);
+  color: #fff;
+  padding: 18px 0 16px;
+  box-shadow: 0 8px 28px rgba(43, 11, 77, .28);
+}
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 62px; height: 46px; border-radius: 12px;
+  background: linear-gradient(140deg, #ffb43b, #ff3b30 60%, #ff2d95);
+  font-weight: 800; font-size: 15px; letter-spacing: .5px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45);
+}
+.topbar h1 { font-size: 20px; margin: 0; letter-spacing: .5px; }
+.brand-sub { margin: 0; font-size: 12.5px; opacity: .8; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.rules-badge {
+  font-size: 12px; padding: 5px 11px; border-radius: 999px;
+  background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .28);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- 平台切换 */
+.tabs-wrap { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: var(--ink-2);
+  padding: 9px 18px; border-radius: 999px; cursor: pointer; font-size: 14px; font-weight: 600;
+  font-family: inherit; transition: .18s; white-space: nowrap;
+}
+.tab:hover { border-color: var(--tab-accent, var(--accent)); color: var(--ink); }
+.tab[aria-selected="true"] {
+  background: var(--tab-accent, var(--accent)); border-color: transparent; color: #fff;
+  box-shadow: 0 6px 16px rgba(123, 47, 247, .28);
+}
+.tab .tab-tag { font-weight: 400; opacity: .75; font-size: 12px; margin-left: 6px; }
+
+/* ---------------------------------------------------------------- 布局 */
+/* DOM 里结果栏在前（窄屏时价格优先露出），宽屏用 grid 位置把它排回右侧 */
+.layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 22px; padding: 22px 0 40px; align-items: start; }
+.col-input { grid-column: 1; grid-row: 1; }
+.col-result { grid-column: 2; grid-row: 1; display: grid; gap: 18px; position: sticky; top: 74px; }
+@media (max-width: 940px) {
+  .layout { grid-template-columns: 1fr; }
+  .col-input, .col-result { grid-column: 1; }
+  .col-result { grid-row: 1; position: static; }
+  .col-input { grid-row: 2; }
+}
+
+/* ---------------------------------------------------------------- 卡片 */
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 20px; box-shadow: var(--shadow); margin-bottom: 18px;
+}
+.card.minor { padding: 18px 20px; }
+.card-title { font-size: 16px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+.card-title::before {
+  content: ""; width: 4px; height: 16px; border-radius: 2px;
+  background: linear-gradient(var(--brand-2), var(--brand));
+}
+.card-sub { font-size: 13px; color: var(--ink-3); margin: -8px 0 16px; }
+
+/* ---------------------------------------------------------------- 表单 */
+.field { padding: 13px 0; border-top: 1px dashed var(--line); }
+.field:first-of-type { border-top: 0; padding-top: 0; }
+.field > label:not(.switch):not(.mini) { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 7px; }
+.hint { font-size: 12.5px; color: var(--ink-3); margin: 7px 0 0; }
+.card-sub + .field { padding-top: 0; }
+
+/* 场景预设 */
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 4px; }
+.presets-k { font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+.chip-btn {
+  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  background: #f6f2ff; color: var(--accent); border: 1px solid #e4daff;
+  border-radius: 999px; padding: 5px 12px; transition: .16s;
+}
+.chip-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+input[type="number"], input[type="text"], select {
+  font-family: inherit; font-size: 14.5px; color: var(--ink);
+  border: 1px solid var(--line); background: #fbfaff; border-radius: 10px;
+  padding: 9px 11px; width: 100%; transition: .15s;
+}
+input[type="number"]:focus, select:focus {
+  outline: none; border-color: var(--accent); background: #fff;
+  box-shadow: 0 0 0 3px rgba(123, 47, 247, .12);
+}
+select { cursor: pointer; }
+
+.input-money { position: relative; display: flex; align-items: center; }
+.input-money > span {
+  position: absolute; left: 12px; font-weight: 700; color: var(--brand); font-size: 15px;
+}
+.input-money input { padding-left: 28px; font-weight: 700; font-size: 19px; letter-spacing: .5px; }
+
+.inline-inputs { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.inline-inputs .or { font-size: 12px; color: var(--ink-3); padding-bottom: 10px; }
+.mini { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+.mini input, .mini select { width: 112px; font-weight: 600; }
+.mini .unit { position: absolute; }
+.inline-inputs .mini { position: relative; }
+.inline-inputs select { width: auto; min-width: 220px; max-width: 100%; }
+
+/* 开关 */
+.switch { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.slider {
+  position: relative; flex: 0 0 auto; width: 42px; height: 24px; border-radius: 999px;
+  background: #d9d4e8; transition: .2s;
+}
+.slider::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: .2s;
+}
+.switch input:checked + .slider { background: linear-gradient(120deg, var(--brand-2), var(--brand)); }
+.switch input:checked + .slider::after { transform: translateX(18px); }
+.switch input:focus-visible + .slider { box-shadow: 0 0 0 3px rgba(123, 47, 247, .25); }
+.switch-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+
+/* 按钮 */
+.btn {
+  font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  border-radius: 10px; padding: 9px 16px; border: 1px solid transparent; transition: .16s;
+}
+.btn.primary { background: linear-gradient(120deg, var(--accent), var(--brand)); color: #fff; box-shadow: 0 6px 18px rgba(123, 47, 247, .26); }
+.btn.primary:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(123, 47, 247, .32); }
+.btn.ghost { background: rgba(255, 255, 255, .14); color: #fff; border-color: rgba(255, 255, 255, .35); }
+.drawer .btn.ghost, .card .btn.ghost { background: #fff; color: var(--ink-2); border-color: var(--line); }
+.card .btn.ghost:hover, .drawer .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn.sm { padding: 6px 12px; font-size: 13px; }
+.btn.block { width: 100%; }
+
+/* ---------------------------------------------------------------- 结果卡 */
+.result-card {
+  background: linear-gradient(135deg, #2b0b4d, #6c1a9c 55%, #ff3b30);
+  color: #fff; border-radius: var(--radius); padding: 22px; box-shadow: 0 18px 40px rgba(43, 11, 77, .3);
+}
+/* 窄屏镜像卡：只在单栏布局时出现，跟着输入区一起走 */
+.result-mobile { display: none; }
+@media (max-width: 940px) {
+  .col-result { display: none; }
+  .result-mobile { display: block; margin: 0 0 18px; }
+  .result-mobile .result-card { padding: 18px; position: static; }
+  .result-mobile .result-price { font-size: 36px; }
+}
+.result-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.result-label { margin: 0; font-size: 13px; opacity: .78; letter-spacing: 1px; }
+.result-price { margin: 4px 0 2px; font-size: 42px; font-weight: 800; line-height: 1.1; letter-spacing: -1px; }
+.result-price .cur { font-size: 22px; margin-right: 3px; opacity: .9; }
+.result-sub { margin: 0; font-size: 12.5px; opacity: .78; }
+.result-badge {
+  flex: 0 0 auto; text-align: center; padding: 9px 14px; border-radius: 12px;
+  background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .3);
+  font-weight: 800; font-size: 19px; line-height: 1.15; min-width: 84px;
+}
+.result-badge small { display: block; font-size: 10.5px; font-weight: 500; opacity: .8; letter-spacing: .5px; }
+
+.bar { display: flex; height: 9px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, .22); margin: 16px 0 8px; }
+.bar-seg { background: linear-gradient(90deg, var(--brand-3), var(--ok)); transition: width .35s ease; }
+.bar-legend { margin: 0; font-size: 11.5px; opacity: .82; display: flex; gap: 14px; align-items: center; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.dot-pay { background: var(--brand-3); }
+.dot-cut { background: rgba(255, 255, 255, .45); }
+
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.stat { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .16); border-radius: 11px; padding: 9px 11px; }
+.stat-k { display: block; font-size: 11.5px; opacity: .8; }
+.stat-v { display: block; font-size: 16px; font-weight: 700; }
+
+/* ---------------------------------------------------------------- 明细步骤 */
+.steps { list-style: none; margin: 0; padding: 0; }
+.steps li {
+  display: grid; grid-template-columns: 30px 1fr auto; gap: 11px; align-items: start;
+  padding: 11px 0; border-bottom: 1px dashed var(--line);
+}
+.steps li:last-child { border-bottom: 0; }
+.steps li.is-skip { opacity: .55; }
+.steps li.is-zero { opacity: .45; }
+.step-tag {
+  width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; background: #f2eefb; color: var(--accent);
+}
+.steps li.is-skip .step-tag { background: #f1f1f4; color: var(--ink-3); }
+.step-body { min-width: 0; }
+.step-name { font-size: 14px; font-weight: 600; }
+.step-desc { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.step-amount { font-size: 14.5px; font-weight: 700; color: var(--brand); white-space: nowrap; }
+.steps li.is-skip .step-amount { color: var(--ink-3); font-weight: 600; font-size: 13px; }
+.step-after { font-size: 11.5px; color: var(--ink-3); font-weight: 500; }
+.step-amt-box { text-align: right; }
+.empty { font-size: 13px; color: var(--ink-3); margin: 0; }
+
+.tips { margin: 0; padding-left: 4px; list-style: none; }
+.tips li { position: relative; padding: 7px 0 7px 22px; font-size: 13px; color: var(--ink-2); border-bottom: 1px dashed var(--line); }
+.tips li:last-child { border-bottom: 0; }
+.tips li::before { content: "💡"; position: absolute; left: 0; top: 7px; font-size: 12px; }
+
+/* ---------------------------------------------------------------- 比价 */
+.compare-list { display: grid; gap: 10px; }
+.compare-item {
+  display: grid; grid-template-columns: 78px 1fr auto; gap: 12px; align-items: center;
+  border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; background: #fdfcff;
+}
+.compare-item.is-best { border-color: var(--ok); background: linear-gradient(100deg, rgba(16, 185, 129, .09), transparent); }
+.compare-name { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.compare-name span.chip { width: 26px; height: 26px; border-radius: 8px; color: #fff; font-size: 11.5px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.compare-mid { min-width: 0; }
+.compare-bar { height: 6px; border-radius: 999px; background: #eee9f8; overflow: hidden; margin-top: 6px; }
+.compare-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--brand-2)); }
+.compare-pct { font-size: 11.5px; color: var(--ink-3); margin-top: 4px; }
+.compare-price { text-align: right; font-weight: 800; font-size: 16px; }
+.compare-price small { display: block; font-size: 11px; font-weight: 500; color: var(--ink-3); }
+.best-pill { font-size: 10.5px; background: var(--ok); color: #fff; border-radius: 999px; padding: 1px 7px; }
+
+/* ---------------------------------------------------------------- 规则摘要 */
+.rule-summary { font-size: 13px; color: var(--ink-2); }
+.rule-summary h3 { font-size: 13.5px; margin: 14px 0 6px; color: var(--ink); }
+.rule-summary h3:first-child { margin-top: 0; }
+.rule-summary ul { margin: 0; padding-left: 18px; }
+.rule-summary li { margin-bottom: 4px; }
+.rule-summary .chain {
+  background: #f8f6fe; border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px;
+  font-size: 12.5px; color: var(--ink-2); margin-top: 6px;
+}
+.rule-summary .chain b { color: var(--accent); }
+
+/* hidden 属性必须压过组件自身的 display，否则抽屉会在首屏露出 */
+[hidden] { display: none !important; }
+
+/* 京东那类「官方直降」平台：只显示直降金额，隐藏折扣率 */
+#officialInputs.is-cash .rate-only { display: none; }
+
+/* 平台不支持的优惠层：整块变灰 */
+.field.is-off .switch { opacity: .55; }
+.field.is-off .switch-label { color: var(--ink-3); }
+.field.is-off .inline-inputs { opacity: .5; }
+
+/* ---------------------------------------------------------------- 抽屉 */
+.drawer-mask { position: fixed; inset: 0; background: rgba(27, 16, 53, .45); z-index: 40; }
+.drawer {
+  position: fixed; top: 0; right: 0; height: 100%; width: min(520px, 100%);
+  background: #fff; z-index: 50; box-shadow: -14px 0 40px rgba(27, 16, 53, .22);
+  display: flex; flex-direction: column;
+}
+.drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.drawer-head h2 { margin: 0; font-size: 17px; }
+.drawer-body { padding: 18px 20px 28px; overflow-y: auto; }
+.drawer-h3 { font-size: 14px; margin: 22px 0 8px; }
+.rule-form { display: grid; gap: 2px; margin-top: 12px; }
+.rule-row { display: grid; grid-template-columns: 1fr 130px; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+.rule-row label { font-size: 13px; color: var(--ink-2); }
+.sources { margin: 0; padding-left: 18px; font-size: 12.5px; }
+.sources li { margin-bottom: 6px; }
+.sources a { color: var(--accent); text-decoration: none; }
+.sources a:hover { text-decoration: underline; }
+.drawer-actions { display: flex; gap: 10px; margin-top: 22px; }
+
+/* ---------------------------------------------------------------- 页脚 */
+.footer { border-top: 1px solid var(--line); background: #fff; padding: 20px 0 30px; }
+.footer p { margin: 4px 0; font-size: 12.5px; color: var(--ink-3); }
+
+@media (max-width: 560px) {
+  .wrap { width: min(1180px, 100% - 20px); }
+  .card { padding: 16px 14px; }
+  .result-price { font-size: 34px; }
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .compare-item { grid-template-columns: 66px 1fr auto; }
+  .compare-name { font-size: 13px; }
+  .tab { padding: 8px 14px; font-size: 13.5px; }
+  .tab .tab-tag { margin-left: 5px; font-size: 11.5px; }
+  .topbar h1 { font-size: 17px; }
+  .brief-item { grid-template-columns: 1fr; gap: 2px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="logo">11.11</span>
+      <div>
+        <h1>双11 减免计算器</h1>
+        <p class="brand-sub">按平台规则逐层叠加 · 算出真实到手价</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="rules-badge" id="rulesBadge">规则版本 · 2026</span>
+      <button type="button" class="btn ghost" id="btnRules">规则设置</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs-wrap">
+  <div class="wrap">
+    <div class="tabs" id="platformTabs" role="tablist"></div>
+  </div>
+</nav>
+
+<main class="wrap layout">
+
+  <!-- 右栏：结果 -->
+  <section class="col-result" id="colResult">
+    <div class="result-card" id="resultCard">
+      <div class="result-head">
+        <div>
+          <p class="result-label">预计到手价</p>
+          <p class="result-price"><span class="cur">¥</span><span id="finalPrice">--</span></p>
+          <p class="result-sub" id="resultSub">填写左侧信息后自动计算</p>
+        </div>
+        <div class="result-badge" id="discountBadge">--</div>
+      </div>
+
+      <div class="bar" id="barWrap">
+        <div class="bar-seg" id="barFinal"></div>
+      </div>
+      <p class="bar-legend"><span class="dot dot-pay"></span>实付 <span class="dot dot-cut"></span>总优惠</p>
+
+      <div class="stat-row">
+        <div class="stat"><span class="stat-k">优惠合计</span><span class="stat-v" id="totalSaved">¥0</span></div>
+        <div class="stat"><span class="stat-k">省下比例</span><span class="stat-v" id="savedPct">0%</span></div>
+        <div class="stat"><span class="stat-k">单件到手价</span><span class="stat-v" id="unitPrice">¥0</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">减免明细（按叠加顺序）</h2>
+      <ol class="steps" id="steps"></ol>
+      <p class="empty" id="stepsEmpty">勾选左侧任意优惠项，这里会逐层显示扣减过程。</p>
+    </div>
+
+    <div class="card" id="tipsCard">
+      <h2 class="card-title">省钱提示</h2>
+      <ul class="tips" id="tips"></ul>
+    </div>
+
+    <div class="card" id="compareCard" hidden>
+      <h2 class="card-title">四平台对比结果</h2>
+      <div class="compare-list" id="compareList"></div>
+      <p class="hint" id="compareNote"></p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">本平台规则摘要</h2>
+      <div class="rule-summary" id="ruleSummary"></div>
+    </div>
+  </section>
+  <!-- 左栏：输入 -->
+  <section class="col-input" id="colInput">
+
+    <div class="card">
+      <h2 class="card-title">① 商品信息</h2>
+      <div class="field">
+        <label for="price">商品标价 / 报名价（元）</label>
+        <div class="input-money">
+          <span>¥</span>
+          <input type="number" id="price" min="0" step="0.01" value="2999" inputmode="decimal">
+        </div>
+        <p class="hint">填商品详情页上的划线价或大促报名价，下面所有优惠都在这个数字上扣。</p>
+      </div>
+
+      <div class="field">
+        <label for="category">商品品类</label>
+        <select id="category">
+          <option value="general">一般商品（服饰 / 日用 / 美妆…）</option>
+          <option value="digital">手机 / 平板 / 智能穿戴（国补单件封顶 500）</option>
+          <option value="computer">电脑 / 笔记本（国补单件封顶 1500）</option>
+          <option value="appliance">家电（国补单件封顶 1500）</option>
+        </select>
+        <p class="hint">品类决定国家以旧换新补贴的封顶额度，也决定部分品类券是否可用。</p>
+      </div>
+
+      <div class="field">
+        <label for="qty">购买件数</label>
+        <input type="number" id="qty" min="1" step="1" value="1" inputmode="numeric">
+        <p class="hint">多件时按「单价优惠 × 件数」估算，满减门槛按单件金额判断。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">② 可用优惠</h2>
+      <p class="card-sub" id="platformHint">按当前平台规则填写，勾选后自动按顺序叠加。</p>
+
+      <div class="presets" id="presets">
+        <span class="presets-k">一键套用场景</span>
+        <button type="button" class="chip-btn" data-preset="base">只算官方立减</button>
+        <button type="button" class="chip-btn" data-preset="coupon">常见叠加（券 + 会员）</button>
+        <button type="button" class="chip-btn" data-preset="full">极限叠加（含国补 / 以旧换新）</button>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="officialOn" checked>
+          <span class="slider"></span>
+          <span class="switch-label">官方立减 / 官方直降</span>
+        </label>
+        <div class="inline-inputs" id="officialInputs">
+          <label class="mini rate-only"><span class="mini-label">折扣率</span>
+            <input type="number" id="officialRate" min="50" max="100" step="0.5" value="85"><span class="unit">%</span>
+          </label>
+          <span class="or rate-only">或</span>
+          <label class="mini cut-only">直接减
+            <input type="number" id="officialCut" min="0" step="1" placeholder="元"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint" id="officialHint"></p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="storeOn">
+          <span class="slider"></span>
+          <span class="switch-label">店铺券 / 店铺满减</span>
+        </label>
+        <div class="inline-inputs" id="storeInputs">
+          <label class="mini">满
+            <input type="number" id="storeThreshold" min="0" step="1" value="1000"><span class="unit">元</span>
+          </label>
+          <label class="mini">减
+            <input type="number" id="storeCut" min="0" step="1" value="100"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">店铺券门槛按「官方立减后的金额」判断，不够门槛则本层不生效。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="categoryCouponOn">
+          <span class="slider"></span>
+          <span class="switch-label">平台品类券 / 加补券</span>
+        </label>
+        <div class="inline-inputs" id="categoryCouponInputs">
+          <label class="mini">满
+            <input type="number" id="categoryThreshold" min="0" step="1" value="1500"><span class="unit">元</span>
+          </label>
+          <label class="mini">减
+            <input type="number" id="categoryCut" min="0" step="1" value="180"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">淘宝「领券中心」、京东品类神券、抖音消费券都填这里；同级券通常互斥，只算一张。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="voucherOn">
+          <span class="slider"></span>
+          <span class="switch-label" id="voucherLabel">88VIP 专享券</span>
+        </label>
+        <div class="inline-inputs">
+          <select id="voucherSelect"></select>
+        </div>
+        <p class="hint" id="voucherHint"></p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="memberOn">
+          <span class="slider"></span>
+          <span class="switch-label" id="memberLabel">PLUS 会员折扣</span>
+        </label>
+        <div class="inline-inputs" id="memberInputs">
+          <label class="mini">会员折扣
+            <input type="number" id="memberRate" min="50" max="100" step="0.5" value="95"><span class="unit">%</span>
+          </label>
+          <label class="mini">会员券减
+            <input type="number" id="memberCouponCut" min="0" step="1" value="0"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint" id="memberHint"></p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="redPacketOn">
+          <span class="slider"></span>
+          <span class="switch-label">平台红包 / 无门槛券</span>
+        </label>
+        <div class="inline-inputs" id="redPacketInputs">
+          <label class="mini">红包金额
+            <input type="number" id="redPacketAmount" min="0" step="1" value="60"><span class="unit">元</span>
+          </label>
+          <label class="mini">可叠加张数
+            <input type="number" id="redPacketCount" min="1" step="1" value="1"><span class="unit">张</span>
+          </label>
+        </div>
+        <p class="hint">京东每日惊喜红包、淘宝超级红包等；无门槛，通常可多张叠加使用。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="subsidyOn">
+          <span class="slider"></span>
+          <span class="switch-label">国家以旧换新补贴（国补）</span>
+        </label>
+        <div class="inline-inputs" id="subsidyInputs">
+          <label class="mini">补贴比例
+            <input type="number" id="subsidyRate" min="0" max="100" step="0.5" value="15"><span class="unit">%</span>
+          </label>
+          <label class="mini">封顶
+            <input type="number" id="subsidyCap" min="0" step="50" value="500"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">国补按「券 / 红包 / 会员折扣后的实付金额」核算，补贴额再封顶。</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="tradeInOn">
+          <span class="slider"></span>
+          <span class="switch-label">旧机折抵 / 以旧换新回收价</span>
+        </label>
+        <div class="inline-inputs">
+          <label class="mini">折抵金额
+            <input type="number" id="tradeInAmount" min="0" step="10" value="0"><span class="unit">元</span>
+          </label>
+        </div>
+        <p class="hint">旧机回收款直接抵扣，不计入国补核算基数。</p>
+      </div>
+    </div>
+
+    <div class="card minor">
+      <h2 class="card-title">③ 比价</h2>
+      <button type="button" class="btn primary block" id="btnCompare">生成四平台对比</button>
+      <p class="hint">用同一件商品的参数，分别按四个平台的规则算出到手价并排序。</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p>规则数据来源于各平台 2026 年双 11 公开的招商规则与官方活动说明（见「规则设置」内附来源链接），仅供估算参考。</p>
+    <p>实际到手价以结算页为准：券的门槛、互斥关系、地址国补资格、会员身份都会影响最终金额。</p>
+  </div>
+</footer>
+
+<!-- 规则设置抽屉 -->
+<div class="drawer-mask" id="drawerMask" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-labelledby="drawerTitle">
+  <div class="drawer-head">
+    <h2 id="drawerTitle">规则设置</h2>
+    <button type="button" class="btn ghost sm" id="btnCloseDrawer">关闭</button>
+  </div>
+  <div class="drawer-body">
+    <p class="hint">各平台官方立减率、国补默认比例等都可在此调整；改动会保存在本机浏览器（localStorage），随时可恢复官方默认值。</p>
+    <form id="ruleForm" class="rule-form"></form>
+
+    <h3 class="drawer-h3">规则来源</h3>
+    <ul class="sources" id="sourceList"></ul>
+
+    <div class="drawer-actions">
+      <button type="button" class="btn primary" id="btnSaveRules">保存设置</button>
+      <button type="button" class="btn ghost" id="btnResetRules">恢复官方默认</button>
+    </div>
+  </div>
+</aside>
+
+<script>
+/* ==========================================================================
+ *  双11 减免计算器 · 规则数据（2026 年版）
+ *  数据来源：各平台 2026 双11 招商规则与官方活动说明，逐条见 sources 字段。
+ *  说明：平台规则在招商期会微调，页面「规则设置」里所有数字都可在本地覆盖。
+ * ========================================================================== */
+(function (global) {
+  'use strict';
+
+  var DEFAULTS = {
+    officialRate: 85,      // 官方立减 8.5 折（即立减 15%）
+    subsidyRate: 15,       // 国补默认比例 15%
+    subsidyCapDigital: 500,   // 手机/数码单件封顶
+    subsidyCapBig: 1500       // 家电/电脑单件封顶
+  };
+
+  /* 国补：按「券 / 红包 / 会员折扣后的实付」核算，再封顶 */
+  var SUBSIDY = {
+    general:   { rate: 0,  cap: 0,    label: '一般商品（不参与国补）' },
+    digital:   { rate: 15, cap: 500,  label: '手机 / 平板 / 智能穿戴（单件封顶 500 元）' },
+    computer:  { rate: 15, cap: 1500, label: '电脑 / 笔记本（单件封顶 1500 元）' },
+    appliance: { rate: 15, cap: 1500, label: '家电（单件封顶 1500 元）' }
+  };
+
+  /* 88VIP 第一波消费券：7 张共 1555 元；前两档可「膨胀」，膨胀后不可退回 */
+  var VOUCHERS_TMALL = {
+    label: '88VIP 专享消费券',
+    hint: '第一波 88VIP 券包共 7 张 1555 元，10/13 起领、10/20 20:00 起用；满 480 减 60 与满 1500 减 150 两档可「膨胀」加码，膨胀后不可退回。',
+    disableable: true,
+    options: [
+      { id: 'v60',   text: '满 480 减 60',      threshold: 480,  amount: 60 },
+      { id: 'v60e',  text: '满 480 减 60 → 膨胀 满 600 减 75',   threshold: 600,  amount: 75 },
+      { id: 'v60e2', text: '满 480 减 60 → 膨胀 满 800 减 100',  threshold: 800,  amount: 100 },
+      { id: 'v60e3', text: '满 480 减 60 → 膨胀 满 1000 减 125', threshold: 1000, amount: 125 },
+      { id: 'v150',  text: '满 1500 减 150',    threshold: 1500, amount: 150 },
+      { id: 'v150e', text: '满 1500 减 150 → 膨胀 满 1500 减 180', threshold: 1500, amount: 180 },
+      { id: 'v400',  text: '满 3000 减 400',    threshold: 3000, amount: 400 },
+      { id: 'v650',  text: '满 5000 减 650',    threshold: 5000, amount: 650 },
+      { id: 'none',  text: '不使用 88VIP 券',   threshold: 0,    amount: 0, off: true }
+    ]
+  };
+
+  /* 京东 PLUS 超级补贴：千元级券包 + 95 折 */
+  var VOUCHERS_JD = {
+    label: 'PLUS 超级补贴券',
+    hint: 'PLUS 会员可领超千元超级补贴及全品类大额券，可与红包、国补叠加；95 折是否生效以商品是否带「PLUS 专享价」标识为准。',
+    disableable: false,
+    options: [
+      { id: 'none', text: '不使用超级补贴券（只享受 95 折）', threshold: 0, amount: 0, off: true },
+      { id: 'p50',  text: '满 500 减 50',   threshold: 500,  amount: 50 },
+      { id: 'p100', text: '满 1000 减 100', threshold: 1000, amount: 100 },
+      { id: 'p200', text: '满 2000 减 200', threshold: 2000, amount: 200 },
+      { id: 'p400', text: '满 4000 减 400', threshold: 4000, amount: 400 }
+    ]
+  };
+
+  var VOUCHERS_PDD = {
+    label: '平台大额满减券',
+    hint: '拼多多大促统一发放覆盖全品类的大额满减券，补贴成本由平台承担；报名的活动商品同时享受降价补差（价保）。',
+    disableable: false,
+    options: [
+      { id: 'none', text: '不使用平台大额券', threshold: 0, amount: 0, off: true },
+      { id: 'p30',  text: '满 300 减 30',   threshold: 300,  amount: 30 },
+      { id: 'p80',  text: '满 800 减 80',   threshold: 800,  amount: 80 },
+      { id: 'p150', text: '满 1500 减 150', threshold: 1500, amount: 150 },
+      { id: 'p300', text: '满 3000 减 300', threshold: 3000, amount: 300 }
+    ]
+  };
+
+  var VOUCHERS_DOUYIN = {
+    label: '抖音平台消费券',
+    hint: '平台消费券每日发放，抖音端与豆包、红果短剧、今日头条、番茄小说等多端均可领取，全周期可用；使用门槛以券面说明为准。',
+    disableable: true,
+    options: [
+      { id: 'none', text: '不使用平台消费券', threshold: 0, amount: 0, off: true },
+      { id: 'd20', text: '满 200 减 20',   threshold: 200,  amount: 20 },
+      { id: 'd50', text: '满 500 减 50',   threshold: 500,  amount: 50 },
+      { id: 'd100', text: '满 1000 减 100', threshold: 1000, amount: 100 }
+    ]
+  };
+
+  var PLATFORMS = [
+    /* ------------------------------------------------------------------ 淘宝天猫 */
+    {
+      id: 'tmall',
+      name: '淘宝 / 天猫',
+      short: '天猫',
+      accent: '#ff5000',
+      tagline: '取消跨店满减 · 单件立减 · 88VIP 券可膨胀',
+      timeline: [
+        '10/15 20:00 预售开启（美妆、服饰），家电手机直接开卖',
+        '10/20 20:00 正式开卖，持续至 11/13',
+        '10/13 起领 88VIP 消费券，使用期 10/20 20:00 — 10/24 23:59'
+      ],
+      official: {
+        enabled: true,
+        rate: 85,
+        note: '2026 年天猫双11 取消跨店满减，改为单件立减，官方立减 8.5 折起；品牌立减叠加平台消费券后最低约 7.2 折。'
+      },
+      order: ['official', 'categoryCoupon', 'store', 'voucher', 'redPacket', 'tradeIn', 'subsidy'],
+      orderNote: '标的玩法顺序：原价 → 店铺券 / 官方立减 → 88VIP 消费券 → 品类券，折上折。',
+      labels: {
+        categoryCoupon: '平台加补券 / 品类券',
+        voucher: VOUCHERS_TMALL.label,
+        member: '会员折扣',
+        redPacket: '超级红包 / 淘金币抵扣'
+      },
+      hints: {
+        categoryCoupon: '淘宝「领券中心」可领至高 5983 元加补券包，覆盖美妆、服饰、数码、家电等 15+ 品类；美妆至高 280 元、服饰至高 200 元、黄金至高 480 元。',
+        redPacket: '超级红包无门槛、可叠加、可累计，越早领越划算。'
+      },
+      member: {
+        enabled: false,
+        rate: 100,
+        label: '88VIP 额外 95 折',
+        hint: '88VIP 的 95 折仅覆盖部分品牌旗舰店商品，以商品页「88VIP 专享价」标识为准；默认不勾选，可用时再打开。'
+      },
+      voucher: VOUCHERS_TMALL,
+      subsidy: { rate: 15, caps: { general: 0, digital: 500, computer: 1500, appliance: 1500 },
+        note: '家电、手机、电脑等品类叠加国家补贴可低至 6.5 折；国补额度与资格按收货地址判定。' },
+      tips: [
+        '天猫今年不用凑单：买一件减一件，别再为凑门槛硬塞不需要的东西。',
+        '88VIP 券「膨胀」只能一次且不可退回，先算清购物车金额再决定膨胀到哪一档。',
+        '消费券领取截止 10/24 23:55，使用窗口 10/20 20:00 — 10/24 23:59，过期作废。'
+      ],
+      sources: [
+        { t: '天猫双11 于 10 月 20 日晚 8 点开卖（淘宝官方学习中心）', u: 'https://daxue.taobao.com/information/detail.jhtml?id=2111' },
+        { t: '2026 年天猫双11 招商规则（淘宝官方学习中心）', u: 'https://daxue.taobao.com/information/detail.jhtml?id=2015' },
+        { t: '双11「抢跑」背后：从抢流量到「养」用户（北京商报 / 东方财富）', u: 'https://finance.eastmoney.com/a/202610123892970885.html' },
+        { t: '88VIP 可自选消费券面额、1555 元可膨胀券包', u: 'https://weibo.com/2/detail/5353620552025239' }
+      ]
+    },
+
+    /* ------------------------------------------------------------------ 京东 */
+    {
+      id: 'jd',
+      name: '京东',
+      short: '京东',
+      accent: '#e1251b',
+      tagline: '现货开卖 · 官方直降 · PLUS 千元补贴',
+      timeline: [
+        '10/12 20:00 现货开卖，取消定金预售，至 11/13 24:00',
+        '10/31 20:00 开门红爆发期（跨店满减 + 品类券 + 套购补贴）',
+        '11/08 PLUS 会员专属日，11/10 20:00 终极狂欢'
+      ],
+      official: {
+        enabled: true,
+        rate: 100,
+        rateSource: 'cash',
+        cashCut: 300,
+        note: '京东今年主打「官方直降」，不用算折扣率：直接填商品页上的直降金额（元 / 件）即可，留空则本层不计优惠。'
+      },
+      order: ['official', 'store', 'categoryCoupon', 'member', 'voucher', 'redPacket', 'tradeIn', 'subsidy'],
+      orderNote: '京东官方叠加顺序：商品官方直降 → 店铺券 / 品类满减券 → PLUS 会员 95 折 → 双11 超级红包 → 以旧换新折价 → 国家换新补贴。',
+      labels: {
+        categoryCoupon: '品类满减券 / 神券',
+        voucher: VOUCHERS_JD.label,
+        member: 'PLUS 会员 95 折',
+        redPacket: '惊喜红包'
+      },
+      hints: {
+        categoryCoupon: '全品类大额券 + 品类券，同级互斥、跨级兼容；家电组合购还可折上再享 7 折。',
+        redPacket: '全周期每天可领 60 元额外惊喜红包，晚 8 点加码，可与会员补贴、国补叠加。'
+      },
+      member: {
+        enabled: true,
+        rate: 95,
+        label: 'PLUS 会员 95 折',
+        hint: 'PLUS 标记为「官方直降 → 店铺券 → PLUS 95 折 → 超级补贴券 → 红包 → 以旧换新 → 国补」。'
+      },
+      voucher: VOUCHERS_JD,
+      subsidy: { rate: 15, caps: { general: 0, digital: 500, computer: 1500, appliance: 1500 },
+        note: '国补核算基数是「券 + 红包 + 会员折扣后的实付」；大家电封顶 1500 元，手机数码（单价 ≤ 6000 元）封顶 500 元。' },
+      tips: [
+        '10.12 首发与 10.31 开门红是两个低价窗口，11.11 当天的国补额度与热门型号往往已被消耗。',
+        '自营手机、数码、大家电支持签收后 30 天价保，买贵了可申请退差价。',
+        '国补慎退：全额退款会消耗当年品类名额，大件先确认型号再付款。',
+        '学生认证后可叠加学生券，与国补、红包、PLUS 折扣四重叠加。'
+      ],
+      sources: [
+        { t: '京东 11.11：官方直降 + 每日 60 元惊喜红包 + PLUS 超千元补贴（齐鲁网 / 山东经济广播）', u: 'https://news.iqilu.com/shandong/shandonggedi/20261015/5952711.shtml' },
+        { t: '双11 现货开卖：京东取消预售，平台转向会员运营与规则简化（网经社）', u: 'http://www.100ec.cn/detail--6664731.html' },
+        { t: '2026 双十一省钱攻略：口令、满减规则、国补入口与叠加顺序', u: 'http://www.redhongan.com/p/279736.html' },
+        { t: '双11「抢跑」背后（北京商报 / 东方财富）', u: 'https://finance.eastmoney.com/a/202610123892970885.html' }
+      ]
+    },
+
+    /* ------------------------------------------------------------------ 拼多多 */
+    {
+      id: 'pdd',
+      name: '拼多多',
+      short: '百亿补贴',
+      accent: '#e02e24',
+      tagline: '平台出钱满减 · 百亿补贴 · 降价补差',
+      timeline: [
+        '10/13 招商报名开启，10/15 大促正式上线',
+        '大促周期内全品类大额满减券持续发放',
+        '所有带双11 标识商品启用降价补差（价保）'
+      ],
+      official: {
+        enabled: false,
+        rate: 100,
+        rateSource: 'cash',
+        cashCut: 0,
+        note: '拼多多不设官方立减：优惠主要来自平台补贴的大额满减券、百亿补贴价与店铺让利。如果商品页显示「百亿补贴直降」金额，可勾选本层并填入直降金额。'
+      },
+      order: ['official', 'subsidy', 'store', 'voucher', 'categoryCoupon', 'redPacket', 'tradeIn'],
+      orderNote: '拼多多的百亿补贴价通常已是平台补贴后的价格，因此把「百亿补贴 / 平台直降」放在最前面扣减，再叠加店铺券与平台大额券。',
+      labels: {
+        categoryCoupon: '品类券 / 限时券',
+        voucher: VOUCHERS_PDD.label,
+        member: '省钱月卡 / 权益',
+        redPacket: '无门槛红包'
+      },
+      hints: {
+        categoryCoupon: '大促期间各会场还有品类券与限时券，能否叠加以券面说明为准。',
+        redPacket: '多多红包多为无门槛小额券，可多张叠加，但通常不与店铺券同门槛互斥。'
+      },
+      member: {
+        enabled: false,
+        rate: 100,
+        label: '省钱月卡折扣',
+        hint: '省钱月卡以「无门槛券包」形式发放，建议直接在下面「无门槛券」里按面额填写。'
+      },
+      voucher: VOUCHERS_PDD,
+      subsidy: { rate: 15, caps: { general: 0, digital: 500, computer: 1500, appliance: 1500 },
+        note: '国补资格与额度按收货地址判定，平台补贴与国补可同时享受。' },
+      tips: [
+        '带双11 标识的商品都有降价补差：下单后若降价，可直接申请差价赔付。',
+        '商家在大促周期内不得随意调低售价，价格承诺比日常更稳。',
+        '比价时注意「百亿补贴价」已经是补贴后价格，别把平台补贴重复计算两次。'
+      ],
+      sources: [
+        { t: '拼多多开启 2026 年双11 大促招商（壹览商业）', u: 'https://www.yilantop.com/news/108528' },
+        { t: '拼多多 2026 双11 招商开启：低门槛 + 价保政策（甩手网）', u: 'http://shuaishou.com/news/85628.html' },
+        { t: '拼多多双11 招商开启：品牌旗舰店可同款同价报名大促（网经社）', u: 'https://www.100ec.cn/detail--6664708.html' }
+      ]
+    },
+
+    /* ------------------------------------------------------------------ 抖音 */
+    {
+      id: 'douyin',
+      name: '抖音商城',
+      short: '抖音',
+      accent: '#fe2c55',
+      tagline: '不设预售 · 一件直降 · 立减 15%',
+      timeline: [
+        '10/15 启动，持续至 11/11，共 28 天，全程现货不设预售',
+        '10/15—10/18 与 11/07—11/11 两阶段集中投放平台消费券',
+        '10/19—11/06 穿插「现货日」「品类日」',
+        '价格校验周期自 08/31 起持续至 11/11'
+      ],
+      official: {
+        enabled: true,
+        rate: 85,
+        note: '同一商品由商家在「立减折扣」与「一件直降」中二选一：立减折扣为报名价基础上立减 15%，一件直降的让利幅度由商家自定（直接在「官方直降金额」填写）。'
+      },
+      order: ['official', 'store', 'categoryCoupon', 'voucher', 'redPacket', 'tradeIn', 'subsidy'],
+      orderNote: '抖音玩法简单：报名价先吃「立减折扣 / 一件直降」，再叠店铺券、平台消费券与国补，购买单件即可享受，无需凑单。',
+      labels: {
+        categoryCoupon: '店铺品类券 / 达播专属券',
+        voucher: VOUCHERS_DOUYIN.label,
+        member: '会员权益折扣',
+        redPacket: '直播间红包 / 福袋'
+      },
+      hints: {
+        categoryCoupon: '达播间常有专属券，与平台消费券是否互斥以券面规则为准。',
+        redPacket: '直播间红包雨、福袋金额可直接抵扣。'
+      },
+      member: {
+        enabled: false,
+        rate: 100,
+        label: '抖音会员权益折扣',
+        hint: '抖音商城会员权益以积分、运费券为主，一般不影响商品价格，默认不勾选。'
+      },
+      voucher: VOUCHERS_DOUYIN,
+      subsidy: { rate: 15, caps: { general: 0, digital: 500, computer: 1500, appliance: 1500 },
+        note: '符合条件的耐用消费品可结合国家补贴、平台优惠一起换新。' },
+      tips: [
+        '抖音不设预售、全程现货，看到合适价格直接下单即可，不用等定金尾款。',
+        '平台消费券每日发放，可在抖音端及豆包、红果短剧、今日头条、番茄小说等多端领取。',
+        '价格校验自 08/31 起至 11/11，降价可依规则申请价格保护。'
+      ],
+      sources: [
+        { t: '抖音商城「双11」启动：不设预售，多端发放消费券（中证网）', u: 'https://jnzstatic.cs.com.cn/zzb/htmlInfo/135169.html' },
+        { t: '2026 年抖音商城双11 招商规则（抖音电商学习中心）', u: 'https://school.jinritemai.com/doudian/web/articlev0/aJqWoaCZesUW' },
+        { t: '抖音电商「双11」启动：商品一件立减 15% 起', u: 'https://news.dayoo.com/finance/202510/10/171077_54881917.htm' }
+      ]
+    }
+  ];
+
+  /* 每一层在明细里的展示信息 */
+  var STAGE_META = {
+    official:       { name: '官方立减 / 官方直降', icon: '官' },
+    store:          { name: '店铺券 / 店铺满减',   icon: '店' },
+    categoryCoupon: { name: '品类券 / 加补券',     icon: '券' },
+    voucher:        { name: '会员专享券',          icon: '会' },
+    member:         { name: '会员折扣',            icon: '折' },
+    redPacket:      { name: '平台红包 / 无门槛券', icon: '包' },
+    subsidy:        { name: '国家以旧换新补贴',    icon: '补' },
+    tradeIn:        { name: '旧机折抵',            icon: '旧' }
+  };
+
+  var META = {
+    year: 2026,
+    updatedAt: '2026-10-15',
+    notice: '各平台 2026 双11 优惠以「官方立减 / 一件直降」替代沿用多年的跨店满减，规则普遍简化；会员（88VIP / PLUS）成为补贴重点。'
+  };
+
+  global.S11 = {
+    DEFAULTS: DEFAULTS,
+    SUBSIDY: SUBSIDY,
+    PLATFORMS: PLATFORMS,
+    STAGE_META: STAGE_META,
+    META: META
+  };
+})(window);
+
+</script>
+<script>
+/* ==========================================================================
+ *  双11 减免计算器 · 计算引擎
+ *  核心：按平台给定顺序逐层扣减，每一层的门槛按「上一层扣完后的金额」判断。
+ * ========================================================================== */
+(function (global) {
+  'use strict';
+
+  var DATA = global.S11;
+
+  function num(v, fallback) {
+    var n = typeof v === 'number' ? v : parseFloat(v);
+    if (!isFinite(n)) return fallback || 0;
+    return n;
+  }
+
+  /** 金额四舍五入到分，规避浮点误差 */
+  function round2(n) {
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+  }
+
+  function fmt(n) {
+    var v = round2(num(n, 0));
+    return v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fmtInt(n) {
+    return Math.round(num(n, 0)).toLocaleString('zh-CN');
+  }
+
+  function platformOf(id) {
+    for (var i = 0; i < DATA.PLATFORMS.length; i++) {
+      if (DATA.PLATFORMS[i].id === id) return DATA.PLATFORMS[i];
+    }
+    return DATA.PLATFORMS[0];
+  }
+
+  /** 国补：优先用平台自带封顶，其次用全局默认 */
+  function subsidyConfig(platform, category, input) {
+    var caps = (platform.subsidy && platform.subsidy.caps) || {};
+    var fallback = DATA.SUBSIDY[category] || DATA.SUBSIDY.general;
+    var defaultRate = num(platform.subsidy && platform.subsidy.rate, fallback.rate);
+    var cap = caps[category];
+    if (cap === undefined || cap === null) cap = fallback.cap;
+    return {
+      rate: input.subsidyRate === undefined || input.subsidyRate === null || input.subsidyRate === ''
+        ? defaultRate : num(input.subsidyRate, defaultRate),
+      cap: input.subsidyCap === undefined || input.subsidyCap === null || input.subsidyCap === ''
+        ? cap : num(input.subsidyCap, cap)
+    };
+  }
+
+  /**
+   * 核心计算
+   * @param {Object} input
+   *   platform, price, category, qty,
+   *   officialEnabled, officialRate, officialCut,
+   *   storeEnabled, storeThreshold, storeCut,
+   *   categoryCouponEnabled, categoryThreshold, categoryCut,
+   *   voucherEnabled, voucherOption {threshold, amount},
+   *   memberEnabled, memberRate, memberCouponCut,
+   *   redPacketEnabled, redPacketAmount, redPacketCount,
+   *   subsidyEnabled, subsidyRate, subsidyCap,
+   *   tradeInEnabled, tradeInAmount
+   * @returns {Object} 明细 + 汇总
+   */
+  function calculate(input) {
+    input = input || {};
+    var platform = platformOf(input.platform);
+    var price = Math.max(0, num(input.price, 0));
+    var qty = Math.max(1, Math.floor(num(input.qty, 1)));
+    var category = input.category || 'general';
+    var totalBase = round2(price * qty);
+
+    var lines = [];
+    var remaining = totalBase;
+    var order = platform.order || ['official', 'store', 'subsidy'];
+
+    function push(stage, name, amount, desc, extra) {
+      amount = round2(Math.max(0, Math.min(amount, remaining)));
+      var before = remaining;
+      remaining = round2(remaining - amount);
+      var line = {
+        stage: stage,
+        name: name,
+        amount: amount,
+        before: before,
+        after: remaining,
+        desc: desc,
+        skipped: amount <= 0,
+        tag: (DATA.STAGE_META[stage] && DATA.STAGE_META[stage].icon) || '·'
+      };
+      if (extra) for (var k in extra) if (extra.hasOwnProperty(k)) line[k] = extra[k];
+      lines.push(line);
+      return line;
+    }
+
+    function pushSkip(stage, name, desc) {
+      lines.push({
+        stage: stage,
+        name: name,
+        amount: 0,
+        before: remaining,
+        after: remaining,
+        desc: desc,
+        skipped: true,
+        tag: (DATA.STAGE_META[stage] && DATA.STAGE_META[stage].icon) || '·'
+      });
+    }
+
+    for (var i = 0; i < order.length; i++) {
+      var stage = order[i];
+
+      if (stage === 'official') {
+        var oName = (platform.labels && platform.labels.official) || (DATA.STAGE_META.official.name);
+        if (!input.officialEnabled) { pushSkip('official', oName, '未启用官方立减 / 官方直降'); continue; }
+        var cut = num(input.officialCut, 0);
+        if (cut > 0) {
+          push('official', oName, round2(cut * qty),
+            '官方直降：标价 ¥' + fmt(price) + ' × ' + qty + ' 件，直降 ¥' + fmt(cut) + ' / 件');
+        } else {
+          var rate = num(input.officialRate, 85);
+          if (rate >= 100) { pushSkip('official', oName, '折扣率设为 ' + rate + '%，本层无优惠'); continue; }
+          var amt = round2(totalBase * (100 - rate) / 100);
+          push('official', oName, amt,
+            '官方立减 ' + (rate / 10).toFixed(1) + ' 折：¥' + fmt(totalBase) + ' × ' + (100 - rate) + '% = ¥' + fmt(amt));
+        }
+        continue;
+      }
+
+      if (stage === 'store') {
+        if (!input.storeEnabled) { pushSkip('store', '店铺券 / 店铺满减', '未使用店铺券'); continue; }
+        var st = num(input.storeThreshold, 0), sc = num(input.storeCut, 0);
+        if (sc <= 0) { pushSkip('store', '店铺券 / 店铺满减', '店铺券面额为 0'); continue; }
+        if (remaining < st) {
+          pushSkip('store', '店铺券 / 店铺满减',
+            '满 ' + fmtInt(st) + ' 减 ' + fmtInt(sc) + ' 门槛未达：当前 ¥' + fmt(remaining) + '，不生效');
+        } else {
+          push('store', '店铺券 / 店铺满减', round2(sc * qty),
+            '满 ' + fmtInt(st) + ' 减 ' + fmtInt(sc) + (qty > 1 ? '，按单件金额达标 × ' + qty + ' 件' : '') +
+            '，按当前金额 ¥' + fmt(remaining) + ' 判断达标');
+        }
+        continue;
+      }
+
+      if (stage === 'categoryCoupon') {
+        var cName = (platform.labels && platform.labels.categoryCoupon) || '品类券';
+        if (!input.categoryCouponEnabled) { pushSkip('categoryCoupon', cName, '未使用平台品类券'); continue; }
+        var ct = num(input.categoryThreshold, 0), cc = num(input.categoryCut, 0);
+        if (cc <= 0) { pushSkip('categoryCoupon', cName, '券面额为 0'); continue; }
+        if (remaining < ct) {
+          pushSkip('categoryCoupon', cName,
+            '满 ' + fmtInt(ct) + ' 减 ' + fmtInt(cc) + ' 门槛未达：当前 ¥' + fmt(remaining) + '，不生效');
+        } else {
+          push('categoryCoupon', cName, cc,
+            '满 ' + fmtInt(ct) + ' 减 ' + fmtInt(cc) + '，按当前金额 ¥' + fmt(remaining) + ' 判断达标');
+        }
+        continue;
+      }
+
+      if (stage === 'voucher') {
+        var vName = (platform.labels && platform.labels.voucher) || '会员专享券';
+        var opt = input.voucherOption;
+        if (!input.voucherEnabled || !opt || opt.off || num(opt.amount, 0) <= 0) {
+          pushSkip('voucher', vName, '未使用会员专享券'); continue;
+        }
+        if (remaining < num(opt.threshold, 0)) {
+          lines.push({
+            stage: 'voucher', name: vName, amount: 0, before: remaining, after: remaining,
+            desc: '券门槛满 ' + fmtInt(opt.threshold) + ' 未达：当前 ¥' + fmt(remaining) + '，券用不上',
+            skipped: true, tag: DATA.STAGE_META.voucher.icon,
+            gap: round2(num(opt.threshold, 0) - remaining), threshold: num(opt.threshold, 0)
+          });
+        } else {
+          push('voucher', vName, num(opt.amount, 0),
+            (opt.text || '') + '，按当前金额 ¥' + fmt(remaining) + ' 判断达标');
+        }
+        continue;
+      }
+
+      if (stage === 'member') {
+        var mName = (platform.labels && platform.labels.member) || '会员折扣';
+        if (!input.memberEnabled) { pushSkip('member', mName, '未启用会员权益'); continue; }
+        var mc = num(input.memberCouponCut, 0);
+        if (mc > 0) push('member', mName + '（会员券）', mc, '会员专属券减 ¥' + fmtInt(mc));
+        var mr = num(input.memberRate, 100);
+        if (mr < 100) {
+          var memberBefore = remaining;
+          var mAmt = round2(memberBefore * (100 - mr) / 100);
+          push('member', mName, mAmt,
+            '会员 ' + (mr / 10).toFixed(1) + ' 折：¥' + fmt(memberBefore) + ' × ' + (100 - mr) + '% = ¥' + fmt(mAmt));
+        } else if (mc <= 0) {
+          pushSkip('member', mName, '会员折扣率 100%，本层无优惠');
+        }
+        continue;
+      }
+
+      if (stage === 'redPacket') {
+        var rName = (platform.labels && platform.labels.redPacket) || '平台红包';
+        if (!input.redPacketEnabled) { pushSkip('redPacket', rName, '未使用红包'); continue; }
+        var ra = num(input.redPacketAmount, 0), rc = Math.max(1, Math.floor(num(input.redPacketCount, 1)));
+        if (ra <= 0) { pushSkip('redPacket', rName, '红包金额为 0'); continue; }
+        push('redPacket', rName, round2(ra * rc),
+          '无门槛红包 ¥' + fmtInt(ra) + ' × ' + rc + ' 张');
+        continue;
+      }
+
+      if (stage === 'subsidy') {
+        if (!input.subsidyEnabled) { pushSkip('subsidy', '国家以旧换新补贴', '未启用国补'); continue; }
+        var conf = subsidyConfig(platform, category, input);
+        if (conf.cap <= 0 || conf.rate <= 0) {
+          pushSkip('subsidy', '国家以旧换新补贴', '该品类不在国补范围内；如需参与请在上方「封顶」中填写可用额度');
+          continue;
+        }
+        var base = remaining;
+        var raw = round2(base * conf.rate / 100);
+        var amount = round2(Math.min(raw, conf.cap));
+        push('subsidy', '国家以旧换新补贴', amount,
+          '国补 ' + conf.rate + '%：以券后实付 ¥' + fmt(base) + ' 为基数 = ¥' + fmt(raw) +
+          '，单件封顶 ¥' + fmtInt(conf.cap) + ' → 补贴 ¥' + fmt(amount),
+          { subsidyBase: base, subsidyRaw: raw, subsidyCap: conf.cap });
+        continue;
+      }
+
+      if (stage === 'tradeIn') {
+        if (!input.tradeInEnabled) { pushSkip('tradeIn', '旧机折抵', '未使用旧机折抵'); continue; }
+        var ta = num(input.tradeInAmount, 0);
+        if (ta <= 0) { pushSkip('tradeIn', '旧机折抵', '折抵金额为 0'); continue; }
+        push('tradeIn', '旧机折抵', ta, '旧机回收款直接抵扣 ¥' + fmtInt(ta) + '（不计入国补核算基数）');
+        continue;
+      }
+    }
+
+    var totalSaved = round2(totalBase - remaining);
+    var result = {
+      platform: platform,
+      price: price,
+      qty: qty,
+      category: category,
+      totalBase: totalBase,
+      finalTotal: remaining,
+      unitFinal: round2(remaining / qty),
+      totalSaved: totalSaved,
+      savedPct: totalBase > 0 ? round2(totalSaved / totalBase * 100) : 0,
+      payPct: totalBase > 0 ? round2(remaining / totalBase * 100) : 0,
+      lines: lines,
+      metas: []
+    };
+    result.metas = buildMetas(result);
+    return result;
+  }
+
+  /** 生成提示文案 */
+  function buildMetas(r) {
+    var tips = [];
+    var p = r.platform;
+
+    if (r.totalBase > 0 && r.payPct <= 72.5) {
+      tips.push('到手价约为标价的 ' + r.payPct.toFixed(1) + '%，已经摸到今年天猫「品牌立减 + 平台消费券」宣传的最低档（约 7.2 折）附近。');
+    }
+    for (var i = 0; i < r.lines.length; i++) {
+      var l = r.lines[i];
+      if (l.skipped && l.stage === 'voucher' && l.gap > 0) {
+        tips.push('会员券还差 ¥' + fmt(l.gap) + ' 才够门槛（当前 ¥' + fmt(l.after) + '）：别为用券硬凑，今年天猫单件立减，凑单收益常常低于多买的成本。');
+      }
+      if (l.skipped && l.stage === 'store' && l.desc && l.desc.indexOf('门槛未达') >= 0) {
+        tips.push('店铺券门槛未达（当前 ¥' + fmt(l.after) + '），只差一点可考虑加一件低价商品凑单，但要先算清加购成本是否小于券面额。');
+      }
+      if (l.skipped && l.stage === 'subsidy') {
+        tips.push('国补没算进去：一般商品不参与国补；家电按品类单件封顶 1500 元、数码封顶 500 元，且按收货地址判定资格。');
+      }
+      if (l.subsidyCap && l.subsidyRaw > l.subsidyCap) {
+        tips.push('国补已触及单件封顶 ¥' + fmtInt(l.subsidyCap) + '（按比例本应补贴 ¥' + fmt(l.subsidyRaw) + '）。');
+      }
+    }
+    if (p && p.tips) for (var j = 0; j < p.tips.length; j++) tips.push(p.tips[j]);
+    var seen = {}, out = [];
+    for (var k = 0; k < tips.length; k++) {
+      if (!seen[tips[k]]) { seen[tips[k]] = 1; out.push(tips[k]); }
+    }
+    return out;
+  }
+
+  /**
+   * 同一件商品 / 同一批参数，分别跑四个平台的规则做比价
+   * 用 params 打底，再套用每个平台的默认玩法（是否官方立减、会员折扣等）
+   */
+  function compareAll(params) {
+    var results = [];
+    for (var i = 0; i < DATA.PLATFORMS.length; i++) {
+      var p = DATA.PLATFORMS[i];
+      var input = {};
+      for (var k in params) if (params.hasOwnProperty(k)) input[k] = params[k];
+      input.platform = p.id;
+      // 官方立减：只跟随平台自身的玩法（立减率 or 直降金额），不跨模式套用
+      input.officialEnabled = !!(params.officialEnabled && p.official && p.official.enabled !== false);
+      var cashMode = !!(p.official && p.official.rateSource === 'cash');
+      if (!input.officialEnabled) {
+        input.officialCut = 0;
+        input.officialRate = 100;
+      } else if (cashMode) {
+        var userCut = num(params.officialCut, 0);
+        input.officialCut = userCut > 0 ? userCut : num(p.official.cashCut, 0);
+        input.officialRate = 100;
+      } else {
+        var userRate = num(params.officialRate, 0);
+        input.officialCut = 0;
+        input.officialRate = userRate > 0 ? userRate : (p.official.rate || DATA.DEFAULTS.officialRate);
+      }
+      input.memberEnabled = !!(params.memberEnabled && p.member && p.member.enabled);
+      input.voucherEnabled = !!params.voucherEnabled && !!p.voucher;
+      if (input.voucherEnabled) {
+        input.voucherOption = pickVoucher(p.voucher, params.voucherOption);
+      }
+      var conf = subsidyConfig(p, input.category || 'general', {});
+      if (params.subsidyEnabled) {
+        input.subsidyRate = conf.rate;
+        input.subsidyCap = conf.cap;
+      }
+      results.push(calculate(input));
+    }
+    results.sort(function (a, b) { return a.finalTotal - b.finalTotal; });
+    return results;
+  }
+
+  /** 跨平台时把用户选的券「换算」成目标平台最接近的档位 */
+  function pickVoucher(voucher, chosen) {
+    if (!voucher || !voucher.options || !voucher.options.length) return null;
+    var target = chosen ? num(chosen.amount, 0) : 0;
+    var best = null;
+    for (var i = 0; i < voucher.options.length; i++) {
+      var o = voucher.options[i];
+      if (o.off) continue;
+      if (best === null || Math.abs(o.amount - target) < Math.abs(best.amount - target)) best = o;
+    }
+    return best || voucher.options[0];
+  }
+
+  global.S11Engine = {
+    calculate: calculate,
+    compareAll: compareAll,
+    platformOf: platformOf,
+    subsidyConfig: subsidyConfig,
+    pickVoucher: pickVoucher,
+    fmt: fmt,
+    fmtInt: fmtInt,
+    round2: round2,
+    num: num
+  };
+})(window);
+
+</script>
+<script>
+/* ==========================================================================
+ *  双11 减免计算器 · 界面逻辑
+ * ========================================================================== */
+(function () {
+  'use strict';
+
+  var DATA = window.S11;
+  var E = window.S11Engine;
+  var STORE_KEY = 's11.rules.2026';
+
+  var state = {
+    platform: DATA.PLATFORMS[0].id,
+    overrides: loadOverrides()
+  };
+
+  /** 官方默认规则的一份快照：在应用用户覆盖之前捕获，用于「恢复官方默认」 */
+  var ORIGINAL = JSON.parse(JSON.stringify({
+    DEFAULTS: DATA.DEFAULTS,
+    SUBSIDY: DATA.SUBSIDY,
+    PLATFORMS: DATA.PLATFORMS,
+    STAGE_META: DATA.STAGE_META,
+    META: DATA.META
+  }));
+
+  /* ------------------------------------------------------------ 本地规则覆盖 */
+  function loadOverrides() {
+    try {
+      var raw = window.localStorage.getItem(STORE_KEY);
+      if (!raw) return {};
+      var obj = JSON.parse(raw);
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function saveOverrides(obj) {
+    state.overrides = obj || {};
+    try { window.localStorage.setItem(STORE_KEY, JSON.stringify(state.overrides)); } catch (e) { /* 隐私模式忽略 */ }
+  }
+  function applyOverrides() {
+    var ov = state.overrides;
+    if (!ov || !Object.keys(ov).length) return;
+    if (ov.officialRate !== undefined) DATA.DEFAULTS.officialRate = E.num(ov.officialRate, 85);
+    if (ov.subsidyRate !== undefined) DATA.DEFAULTS.subsidyRate = E.num(ov.subsidyRate, 15);
+    if (ov.subsidyCapDigital !== undefined) DATA.DEFAULTS.subsidyCapDigital = E.num(ov.subsidyCapDigital, 500);
+    if (ov.subsidyCapBig !== undefined) DATA.DEFAULTS.subsidyCapBig = E.num(ov.subsidyCapBig, 1500);
+    DATA.PLATFORMS.forEach(function (p) {
+      if (!p.official) return;
+      if (p.official.enabled !== false && p.official.rate !== undefined) {
+        p.official.rate = p.official.rateSource === 'cash' ? p.official.rate : DATA.DEFAULTS.officialRate;
+      }
+      if (p.subsidy) {
+        p.subsidy.rate = DATA.DEFAULTS.subsidyRate;
+        p.subsidy.caps.general = 0;
+        p.subsidy.caps.digital = DATA.DEFAULTS.subsidyCapDigital;
+        p.subsidy.caps.computer = DATA.DEFAULTS.subsidyCapBig;
+        p.subsidy.caps.appliance = DATA.DEFAULTS.subsidyCapBig;
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------ 元素引用 */
+  var $ = function (id) { return document.getElementById(id); };
+  var el = {};
+  [
+    'platformTabs', 'rulesBadge', 'btnRules', 'price', 'category', 'qty', 'presets',
+    'officialOn', 'officialRate', 'officialCut', 'officialHint', 'officialInputs',
+    'storeOn', 'storeThreshold', 'storeCut', 'storeInputs',
+    'categoryCouponOn', 'categoryThreshold', 'categoryCut', 'categoryCouponInputs',
+    'voucherOn', 'voucherSelect', 'voucherLabel', 'voucherHint',
+    'memberOn', 'memberRate', 'memberCouponCut', 'memberLabel', 'memberHint', 'memberInputs',
+    'redPacketOn', 'redPacketAmount', 'redPacketCount', 'redPacketInputs',
+    'subsidyOn', 'subsidyRate', 'subsidyCap', 'subsidyInputs',
+    'tradeInOn', 'tradeInAmount',
+    'finalPrice', 'resultSub', 'discountBadge', 'barFinal', 'totalSaved', 'savedPct', 'unitPrice',
+    'steps', 'stepsEmpty', 'tips', 'ruleSummary', 'platformHint',
+    'btnCompare', 'compareCard', 'compareList', 'compareNote',
+    'drawer', 'drawerMask', 'btnCloseDrawer', 'ruleForm', 'btnSaveRules', 'btnResetRules', 'sourceList'
+  ].forEach(function (id) { el[id] = $(id); });
+
+  var current = DATA.PLATFORMS[0];
+
+  /* ------------------------------------------------------------ 工具 */
+  function checked(node) { return !!(node && node.checked); }
+  function val(node) { return node ? node.value : ''; }
+  function setDisabled(node, disabled) {
+    if (!node) return;
+    node.disabled = !!disabled;
+    var box = node.closest ? node.closest('.field') : null;
+    if (box) box.classList.toggle('is-off', !!disabled);
+  }
+
+  /* ------------------------------------------------------------ 平台切换 */
+  function renderTabs() {
+    el.platformTabs.innerHTML = '';
+    DATA.PLATFORMS.forEach(function (p) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tab';
+      b.setAttribute('role', 'tab');
+      b.style.setProperty('--tab-accent', p.accent);
+      b.setAttribute('aria-selected', String(p.id === state.platform));
+      b.appendChild(document.createTextNode(p.name));
+      // 简称已包含在平台名里就不重复显示（窄屏由 CSS 强制显示，避免平台名被截断）
+      if (p.name.indexOf(p.short) < 0) {
+        var tag = document.createElement('span');
+        tag.className = 'tab-tag';
+        tag.textContent = p.short;
+        b.appendChild(tag);
+      }
+      b.addEventListener('click', function () { switchPlatform(p.id); });
+      el.platformTabs.appendChild(b);
+    });
+  }
+
+  function switchPlatform(id) {
+    state.platform = id;
+    current = E.platformOf(id);
+    Array.prototype.forEach.call(el.platformTabs.children, function (node, i) {
+      node.setAttribute('aria-selected', String(DATA.PLATFORMS[i].id === id));
+    });
+    resetInputsForPlatform();
+    el.compareCard.hidden = true;
+    renderRuleSummary();
+    recalc();
+  }
+
+  /** 换平台时，把「平台差异项」重置为该平台默认玩法，用户手填的金额尽量保留 */
+  function resetInputsForPlatform() {
+    var p = current;
+
+    // 官方立减 / 官方直降
+    var off = p.official || { enabled: false, rate: 100 };
+    var cashFirst = off.rateSource === 'cash' || !off.enabled;
+    el.officialOn.checked = !!off.enabled;
+    var effRate = (off.rate === undefined ? DATA.DEFAULTS.officialRate : off.rate);
+    if (cashFirst) {
+      // 京东这类「官方直降」平台：只填直降金额
+      el.officialInputs.classList.add('is-cash');
+      el.officialCut.value = off.cashCut !== undefined ? off.cashCut : (off.enabled ? 300 : '');
+      el.officialRate.value = 85;
+    } else {
+      el.officialInputs.classList.remove('is-cash');
+      el.officialCut.value = '';
+      el.officialRate.value = effRate;
+    }
+    setDisabled(el.officialOn, !off.enabled);
+    setDisabled(el.officialRate, !off.enabled);
+    setDisabled(el.officialCut, !off.enabled);
+    el.officialHint.textContent = off.note || '';
+    syncOfficialInputs();
+
+    // 会员
+    var mem = p.member || { enabled: false, rate: 100 };
+    el.memberOn.checked = !!mem.enabled;
+    el.memberRate.value = mem.rate || 100;
+    el.memberLabel.textContent = mem.label || '会员折扣';
+    el.memberHint.textContent = mem.hint || '';
+    setDisabled(el.memberOn, !mem.enabled);
+    setDisabled(el.memberRate, !mem.enabled);
+    setDisabled(el.memberCouponCut, !mem.enabled);
+    if (mem.couponLabel && el.memberCouponCut.parentNode.firstChild) {
+      el.memberCouponCut.parentNode.firstChild.nodeValue = mem.couponLabel;
+    }
+
+    // 会员专享券
+    var v = p.voucher;
+    el.voucherSelect.innerHTML = '';
+    (v && v.options ? v.options : []).forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o.id;
+      opt.textContent = o.text;
+      el.voucherSelect.appendChild(opt);
+    });
+    if (v && v.options && v.options.length) el.voucherSelect.value = v.options[0].id;
+    el.voucherOn.checked = false;
+    el.voucherLabel.textContent = (p.labels && p.labels.voucher) || '会员专享券';
+    el.voucherHint.textContent = v ? v.hint : '该平台没有对应的会员专享券体系，本层不参与计算。';
+    setDisabled(el.voucherOn, !v);
+    setDisabled(el.voucherSelect, !v);
+
+    // 各层名称与提示随平台变化
+    var L = p.labels || {};
+    var ccLabel = el.categoryCouponInputs.parentNode.querySelector('.switch-label');
+    if (ccLabel) ccLabel.textContent = L.categoryCoupon || '品类券 / 加补券';
+    var rpLabel = el.redPacketInputs.parentNode.querySelector('.switch-label');
+    if (rpLabel) rpLabel.textContent = L.redPacket || '平台红包';
+    setHint('categoryCouponOn', (p.hints && p.hints.categoryCoupon) || '平台品类券 / 加补券，同级通常互斥，只算一张。');
+    setHint('redPacketOn', (p.hints && p.hints.redPacket) || '无门槛红包，可多张叠加。');
+
+    // 平台副标题与规则版本
+    el.platformHint.textContent = p.tagline + ' —— ' + (p.orderNote || '');
+    el.rulesBadge.textContent = '规则版本 · ' + DATA.META.year + '（' + DATA.META.updatedAt + '）';
+  }
+
+  /** 「折扣率」与「直接减」二选一：填了直降金额就按直降算 */
+  function syncOfficialInputs() {
+    var on = checked(el.officialOn);
+    var hasCut = E.num(val(el.officialCut), 0) > 0;
+    el.officialRate.disabled = !on || hasCut;
+    el.officialCut.disabled = !on;
+  }
+
+  /** 给某个开关下面的 .hint 换文案 */
+  function setHint(switchId, text) {
+    var input = el[switchId];
+    if (!input) return;
+    var field = input.closest('.field');
+    if (!field) return;
+    var hint = field.querySelector('.hint');
+    if (hint) hint.textContent = text;
+  }
+
+  /* ------------------------------------------------------------ 读取表单 */
+  function readInput() {
+    var vOpt = null;
+    if (current.voucher && current.voucher.options) {
+      var id = val(el.voucherSelect);
+      current.voucher.options.forEach(function (o) { if (o.id === id) vOpt = o; });
+    }
+    return {
+      platform: current.id,
+      price: E.num(val(el.price), 0),
+      category: val(el.category) || 'general',
+      qty: Math.max(1, Math.floor(E.num(val(el.qty), 1))),
+      officialEnabled: checked(el.officialOn),
+      officialRate: E.num(val(el.officialRate), DATA.DEFAULTS.officialRate),
+      officialCut: E.num(val(el.officialCut), 0),
+      storeEnabled: checked(el.storeOn),
+      storeThreshold: E.num(val(el.storeThreshold), 0),
+      storeCut: E.num(val(el.storeCut), 0),
+      categoryCouponEnabled: checked(el.categoryCouponOn),
+      categoryThreshold: E.num(val(el.categoryThreshold), 0),
+      categoryCut: E.num(val(el.categoryCut), 0),
+      voucherEnabled: checked(el.voucherOn),
+      voucherOption: vOpt,
+      memberEnabled: checked(el.memberOn),
+      memberRate: E.num(val(el.memberRate), 100),
+      memberCouponCut: E.num(val(el.memberCouponCut), 0),
+      redPacketEnabled: checked(el.redPacketOn),
+      redPacketAmount: E.num(val(el.redPacketAmount), 0),
+      redPacketCount: Math.max(1, Math.floor(E.num(val(el.redPacketCount), 1))),
+      subsidyEnabled: checked(el.subsidyOn),
+      subsidyRate: val(el.subsidyRate) === '' ? undefined : E.num(val(el.subsidyRate), undefined),
+      subsidyCap: val(el.subsidyCap) === '' ? undefined : E.num(val(el.subsidyCap), undefined),
+      tradeInEnabled: checked(el.tradeInOn),
+      tradeInAmount: E.num(val(el.tradeInAmount), 0)
+    };
+  }
+
+  /** 一键套用常见叠加场景（可以点多次来回切换） */
+  function applyPreset(name) {
+    var p = current;
+    var hasOfficial = !!(p.official && p.official.enabled);
+    var hasMember = !!(p.member && p.member.enabled);
+    var hasVoucher = !!p.voucher;
+
+    var cfg = {
+      base:  { official: true, store: false, categoryCoupon: false, voucher: false, member: false, redPacket: false, subsidy: false, tradeIn: false },
+      coupon: { official: true, store: true, categoryCoupon: true, voucher: true, member: hasMember, redPacket: true, subsidy: false, tradeIn: false },
+      full:  { official: true, store: true, categoryCoupon: true, voucher: true, member: hasMember, redPacket: true, subsidy: true, tradeIn: true }
+    }[name];
+    if (!cfg) return;
+
+    function set(node, on) {
+      if (!node) return;
+      node.checked = !!on && !node.disabled;
+      node.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    set(el.officialOn, cfg.official && hasOfficial);
+    set(el.storeOn, cfg.store);
+    set(el.categoryCouponOn, cfg.categoryCoupon);
+    set(el.voucherOn, cfg.voucher && hasVoucher);
+    set(el.memberOn, cfg.member && hasMember);
+    set(el.redPacketOn, cfg.redPacket);
+    set(el.subsidyOn, cfg.subsidy);
+    set(el.tradeInOn, cfg.tradeIn && E.num(val(el.tradeInAmount), 0) > 0);
+
+    syncOfficialInputs();
+    recalc();
+  }
+
+  /** 窄屏：把价格卡复制一份放到输入区最前面，边调参数边看到手价 */
+  function setupMobileResult() {
+    var src = document.querySelector('#resultCard');
+    var box = document.querySelector('#colInput');
+    if (!src || !box) return;
+    var wrap = document.querySelector('#resultCardMobile');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'result-mobile';
+      wrap.id = 'resultCardMobile';
+      wrap.appendChild(src.cloneNode(true));
+      box.insertBefore(wrap, box.firstChild);
+    }
+    var cl = wrap.firstElementChild;
+    cl.removeAttribute('id');
+    el.mobileMirror = {
+      price: cl.querySelector('.result-price').lastElementChild,
+      sub: cl.querySelector('.result-sub'),
+      badge: cl.querySelector('.result-badge'),
+      saved: cl.querySelector('.stat-v'),
+      pct: cl.querySelectorAll('.stat-v')[1],
+      unit: cl.querySelectorAll('.stat-v')[2],
+      bar: cl.querySelector('.bar-seg')
+    };
+  }
+
+  function updateMobileResult(o) {
+    var m = el.mobileMirror;
+    if (!m) return;
+    m.price.textContent = o.finalPrice;
+    m.sub.textContent = o.resultSub;
+    m.badge.textContent = o.badge;
+    m.badge.className = 'result-badge' + (o.badgeLow ? ' is-low' : '');
+    m.saved.textContent = o.totalSaved;
+    m.pct.textContent = o.savedPct;
+    m.unit.textContent = o.unitPrice;
+    m.bar.style.width = o.finalPct + '%';
+  }
+
+  /* ------------------------------------------------------------ 计算 + 渲染 */
+  function recalc() {
+    var input = readInput();
+    var r = E.calculate(input);
+    renderResult(r);
+    renderSteps(r);
+    renderTips(r);
+  }
+
+  function renderResult(r) {
+    var payPct = Math.max(0, Math.min(100, r.payPct));
+    var badgeHtml = (r.payPct > 0 ? (r.payPct / 10).toFixed(1) : '0') + ' 折<small>到手折扣</small>';
+    var badText = (r.payPct > 0 ? (r.payPct / 10).toFixed(1) : '0') + ' 折到手折扣';
+
+    el.finalPrice.textContent = E.fmt(r.finalTotal);
+    el.totalSaved.textContent = '¥' + E.fmt(r.totalSaved);
+    el.savedPct.textContent = (r.savedPct ? r.savedPct.toFixed(1) : '0') + '%';
+    el.unitPrice.textContent = '¥' + E.fmt(r.unitFinal);
+    el.barFinal.style.width = payPct + '%';
+    el.discountBadge.innerHTML = badgeHtml;
+
+    var bits = [];
+    bits.push(current.short + ' · 标价 ¥' + E.fmt(r.totalBase) + ' × ' + r.qty + ' 件');
+    if (r.totalSaved > 0) bits.push('共减 ¥' + E.fmt(r.totalSaved));
+    else bits.push('当前没有叠加任何优惠');
+    el.resultSub.textContent = bits.join(' · ');
+
+    updateMobileResult({
+      finalPrice: E.fmt(r.finalTotal),
+      resultSub: bits.join(' · '),
+      badge: badText,
+      badgeLow: r.payPct > 0 && r.payPct <= 60,
+      totalSaved: '¥' + E.fmt(r.totalSaved),
+      savedPct: el.savedPct.textContent,
+      unitPrice: el.unitPrice.textContent,
+      finalPct: payPct
+    });
+  }
+
+  function renderSteps(r) {
+    el.steps.innerHTML = '';
+    var active = r.lines.filter(function (l) { return !l.skipped; });
+    if (!active.length) {
+      el.stepsEmpty.hidden = false;
+      el.stepsEmpty.textContent = '当前没有生效的优惠层，勾选左侧任意优惠项试试。';
+      return;
+    }
+    el.stepsEmpty.hidden = true;
+    r.lines.forEach(function (l) {
+      var li = document.createElement('li');
+      li.className = l.skipped ? 'is-skip' : '';
+      var amountText = l.skipped ? '未生效' : '-¥' + E.fmt(l.amount);
+      li.innerHTML =
+        '<div class="step-tag">' + l.tag + '</div>' +
+        '<div class="step-body">' +
+          '<div class="step-name">' + l.name + '</div>' +
+          '<div class="step-desc">' + l.desc + '</div>' +
+        '</div>' +
+        '<div class="step-amt-box">' +
+          '<div class="step-amount">' + amountText + '</div>' +
+          (l.skipped ? '' : '<div class="step-after">余 ¥' + E.fmt(l.after) + '</div>') +
+        '</div>';
+      el.steps.appendChild(li);
+    });
+  }
+
+  function renderTips(r) {
+    el.tips.innerHTML = '';
+    if (!r.metas.length) {
+      var li = document.createElement('li');
+      li.textContent = '勾选优惠项后，这里会给出凑单、门槛、国补方面的提醒。';
+      el.tips.appendChild(li);
+      return;
+    }
+    r.metas.forEach(function (t) {
+      var li = document.createElement('li');
+      li.textContent = t;
+      el.tips.appendChild(li);
+    });
+  }
+
+  function renderRuleSummary() {
+    var p = current;
+    var html = '';
+    html += '<h3>' + p.name + ' · 活动节奏</h3><ul>';
+    (p.timeline || []).forEach(function (t) { html += '<li>' + t + '</li>'; });
+    html += '</ul>';
+    html += '<h3>优惠叠加顺序</h3><div class="chain">' + (p.orderNote || '') + '</div>';
+    if (p.official && p.official.note) {
+      html += '<h3>官方立减 / 直降</h3><div>' + p.official.note + '</div>';
+    }
+    if (p.subsidy && p.subsidy.note) {
+      html += '<h3>国家补贴</h3><div>' + p.subsidy.note + '</div>';
+    }
+    html += '<h3>2026 年大促整体变化</h3><div>' + DATA.META.notice + '</div>';
+    el.ruleSummary.innerHTML = html;
+  }
+
+  /* ------------------------------------------------------------ 四平台比价 */
+  function renderCompare() {
+    var base = readInput();
+    var results = E.compareAll(base);
+    var best = results[0];
+    el.compareCard.hidden = false;
+    el.compareList.innerHTML = '';
+
+    results.forEach(function (r, i) {
+      var row = document.createElement('div');
+      row.className = 'compare-item' + (i === 0 ? ' is-best' : '');
+      var pct = r.totalBase > 0 ? Math.max(4, Math.min(100, 100 - r.savedPct)) : 100;
+      row.innerHTML =
+        '<div class="compare-name"><span class="chip" style="background:' + r.platform.accent + '">' +
+          r.platform.short.charAt(0) + '</span>' + r.platform.short + '</div>' +
+        '<div class="compare-mid">' +
+          '<div class="compare-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+          '<div class="compare-pct">标价 ¥' + E.fmt(r.totalBase) + ' · 省 ¥' + E.fmt(r.totalSaved) +
+          '（' + r.savedPct.toFixed(1) + '%）' + (i === 0 ? ' <span class="best-pill">最低</span>' : '') + '</div>' +
+        '</div>' +
+        '<div class="compare-price">¥' + E.fmt(r.finalTotal) + '<small>单件 ¥' + E.fmt(r.unitFinal) + '</small></div>';
+      el.compareList.appendChild(row);
+    });
+
+    var gap = results.length > 1 ? (results[results.length - 1].finalTotal - best.finalTotal) : 0;
+    el.compareNote.textContent =
+      '同一标价 ¥' + E.fmt(base.price) + ' 下，' + best.platform.name + '到手价最低（¥' + E.fmt(best.finalTotal) +
+      '），与最贵的平台相差 ¥' + E.fmt(gap) + '。比价时已按各平台默认玩法自动套用：官方立减率 / 直降、会员折扣、国补封顶，' +
+      '并把你的会员券按面额换算成该平台最接近的档位；各平台券面规则不同，结果仅供决策参考。';
+  }
+
+  /** 把（可能被用户覆盖过的）全局默认值写回输入框 */
+  function syncGlobalDefaults() {
+    var conf = E.subsidyConfig(current, val(el.category) || 'general', {});
+    el.subsidyRate.value = conf.rate;
+    el.subsidyCap.value = conf.cap;
+  }
+
+  /* ------------------------------------------------------------ 规则抽屉 */
+  function renderRuleForm() {
+    var fields = [
+      { key: 'officialRate', label: '官方立减折扣率（%，如 85 表示 8.5 折）', value: DATA.DEFAULTS.officialRate, min: 50, max: 100, step: 0.5 },
+      { key: 'subsidyRate', label: '国补默认比例（%）', value: DATA.DEFAULTS.subsidyRate, min: 0, max: 100, step: 0.5 },
+      { key: 'subsidyCapDigital', label: '国补封顶 · 手机 / 数码（元）', value: DATA.DEFAULTS.subsidyCapDigital, min: 0, max: 5000, step: 50 },
+      { key: 'subsidyCapBig', label: '国补封顶 · 家电 / 电脑（元）', value: DATA.DEFAULTS.subsidyCapBig, min: 0, max: 5000, step: 50 }
+    ];
+    el.ruleForm.innerHTML = '';
+    fields.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'rule-row';
+      row.innerHTML = '<label for="rule-' + f.key + '">' + f.label + '</label>' +
+        '<input type="number" id="rule-' + f.key + '" data-key="' + f.key +
+        '" min="' + f.min + '" max="' + f.max + '" step="' + f.step + '" value="' + f.value + '">';
+      el.ruleForm.appendChild(row);
+    });
+
+    el.sourceList.innerHTML = '';
+    var seen = {};
+    DATA.PLATFORMS.forEach(function (p) {
+      (p.sources || []).forEach(function (s) {
+        if (seen[s.u]) return;
+        seen[s.u] = 1;
+        var li = document.createElement('li');
+        li.innerHTML = '<a href="' + s.u + '" target="_blank" rel="noopener noreferrer">' + s.t + '</a>';
+        el.sourceList.appendChild(li);
+      });
+    });
+  }
+
+  function openDrawer() { el.drawer.hidden = false; el.drawerMask.hidden = false; }
+  function closeDrawer() { el.drawer.hidden = true; el.drawerMask.hidden = true; }
+
+  function saveRuleForm() {
+    var ov = {};
+    Array.prototype.forEach.call(el.ruleForm.querySelectorAll('input[data-key]'), function (input) {
+      ov[input.getAttribute('data-key')] = E.num(input.value, 0);
+    });
+    saveOverrides(ov);
+    resetToDefaults();
+    applyOverrides();
+    resetInputsForPlatform();
+    renderRuleSummary();
+    recalc();
+    closeDrawer();
+  }
+
+  function resetToDefaults() {
+    // 重新载入一份干净的规则数据
+    var fresh = JSON.parse(JSON.stringify(ORIGINAL));
+    DATA.DEFAULTS = fresh.DEFAULTS;
+    DATA.SUBSIDY = fresh.SUBSIDY;
+    DATA.PLATFORMS = fresh.PLATFORMS;
+    DATA.STAGE_META = fresh.STAGE_META;
+    DATA.META = fresh.META;
+    current = E.platformOf(state.platform);
+  }
+
+
+  /* ------------------------------------------------------------ 事件绑定 */
+  function bind() {
+    Array.prototype.forEach.call(document.querySelectorAll('input, select'), function (node) {
+      node.addEventListener('input', recalc);
+      node.addEventListener('change', recalc);
+    });
+    el.btnCompare.addEventListener('click', function () {
+      renderCompare();
+      el.compareCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    el.btnRules.addEventListener('click', function () { renderRuleForm(); openDrawer(); });
+    el.btnCloseDrawer.addEventListener('click', closeDrawer);
+    el.drawerMask.addEventListener('click', closeDrawer);
+    el.btnSaveRules.addEventListener('click', saveRuleForm);
+    el.btnResetRules.addEventListener('click', function () {
+      try { window.localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
+      state.overrides = {};
+      resetToDefaults();
+      syncGlobalDefaults();
+      resetInputsForPlatform();
+      renderRuleForm();
+      renderRuleSummary();
+      recalc();
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') closeDrawer();
+    });
+
+    // 官方立减：填了「直接减 / 直降金额」就优先按直降计算
+    el.officialCut.addEventListener('input', function () {
+      syncOfficialInputs();
+    });
+    el.officialOn.addEventListener('change', function () {
+      if (!checked(el.officialOn)) el.officialCut.value = '';
+      syncOfficialInputs();
+    });
+
+    // 品类不同 → 国补封顶默认值跟着变
+    el.category.addEventListener('change', function () {
+      var conf = E.subsidyConfig(current, val(el.category), {});
+      el.subsidyCap.value = conf.cap;
+      recalc();
+    });
+
+    // 场景预设
+    el.presets.addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest('[data-preset]') : null;
+      if (!btn) return;
+      applyPreset(btn.getAttribute('data-preset'));
+    });
+  }
+
+  /* ------------------------------------------------------------ 启动 */
+  function init() {
+    applyOverrides();
+    renderTabs();
+    bind();
+    setupMobileResult();
+    resetInputsForPlatform();
+    renderRuleSummary();
+    syncGlobalDefaults();
+    recalc();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+</script>
+</body>
+</html>
