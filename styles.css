@@ -84,8 +84,10 @@ body {
 @media (max-width: 940px) {
   .layout { grid-template-columns: 1fr; }
   .col-input, .col-result { grid-column: 1; }
-  .col-result { grid-row: 1; position: static; }
-  .col-input { grid-row: 2; }
+  /* 单列时：表单在上、分析卡片在下；右栏那张价格卡隐藏，由镜像卡顶在最前 */
+  .col-input { grid-row: 1; }
+  .col-result { grid-row: 2; position: static; }
+  .col-result > .result-card { display: none; }
 }
 
 /* ---------------------------------------------------------------- 卡片 */
@@ -177,10 +179,10 @@ select { cursor: pointer; }
   background: linear-gradient(135deg, #2b0b4d, #6c1a9c 55%, #ff3b30);
   color: #fff; border-radius: var(--radius); padding: 22px; box-shadow: 0 18px 40px rgba(43, 11, 77, .3);
 }
-/* 窄屏镜像卡：只在单栏布局时出现，跟着输入区一起走 */
+/* 窄屏镜像卡：只在单栏布局时出现，跟着输入区一起走。
+   注意：这里只隐藏右栏那张「重复的价格卡」，明细/提示/对比/规则摘要必须留着。 */
 .result-mobile { display: none; }
 @media (max-width: 940px) {
-  .col-result { display: none; }
   .result-mobile { display: block; margin: 0 0 18px; }
   .result-mobile .result-card { padding: 18px; position: static; }
   .result-mobile .result-price { font-size: 36px; }
