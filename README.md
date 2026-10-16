@@ -1,5 +1,8 @@
 # 双11 减免计算器
 
+> **在线地址（手机也能直接打开）：<https://danke92.github.io/shuang11-calculator/>**
+> 源码仓库：<https://github.com/danke92/shuang11-calculator>
+
 一个纯静态网页小工具：把「商品标价 + 各平台优惠玩法」按**真实叠加顺序**逐层算下来，给出预计到手价、折扣率和四平台比价。
 
 打开方式：双击 `index.html`（不需要服务器、不需要联网、没有依赖）。
@@ -138,6 +141,10 @@ cloudflared 会输出一个 `https://xxxx.trycloudflare.com` 形式的临时地�
 
 ## 发布到 GitHub Pages（固定网址）
 
+**状态：已上线 ✅** —— <https://danke92.github.io/shuang11-calculator/>
+（Pages 源 = 分支 `gh-pages` / 目录 `/ (root)`；本机访问 `github.com` 网页被网络层阻断，
+所以首次建仓库、开 Pages 是在浏览器里手动完成的，之后的更新全部走脚本。）
+
 仓库里已经准备好了两个脚本，只需授权一次。
 
 ### 一次性准备
@@ -199,6 +206,15 @@ Pages 的发布源请设为 **分支 `gh-pages` / 目录 `/ (root)`**（脚本�
 ```bash
 node tools/test-engine.js     # 校验叠加顺序、门槛判断、国补封顶、比价排序
 ```
+
+再加一条「真实浏览器里跑一遍」的验证（会用无头 Edge 打开页面并断言到手价、明细行数、
+布局顺序、可见价格卡数量；`--js-file` 用于塞进长脚本）：
+
+```bash
+node tools/render.js https://danke92.github.io/shuang11-calculator/ --js-file tools/assert-pages.js --width 390
+```
+
+预期输出里应包含：`"afterFullPreset": "2,149.15"`、`"stepRows": 7`、`"visiblePriceCards": 1`。
 
 ---
 

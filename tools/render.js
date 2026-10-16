@@ -1,7 +1,9 @@
 /**
  * 轻量 CDP 驱动：用 Edge 无头模式加载页面，执行一段 JS，并可选整页截图。
  *
- *   node tools/render.js <页面URL> [--js "表达式"] [--shot 输出.png] [--width 1400]
+ *   node tools/render.js <页面URL> [--js "表达式" | --js-file 脚本.js] [--shot 输出.png] [--width 1400]
+ *
+ * --js-file 用于塞不进命令行引号的长脚本（Windows 下单引号/双引号很折磨）。
  *
  * 仅依赖 Node 内置的 WebSocket / fetch，不装任何第三方包。
  */
@@ -21,6 +23,7 @@ function parseArgs(argv) {
   for (let i = 1; i < argv.length; i += 2) {
     const k = argv[i], v = argv[i + 1];
     if (k === '--js') out.js = v;
+    else if (k === '--js-file') out.jsFile = v;
     else if (k === '--shot') out.shot = v;
     else if (k === '--width') out.width = parseInt(v, 10);
     else if (k === '--wait') out.wait = parseInt(v, 10);
@@ -112,11 +115,17 @@ async function main() {
     await Promise.race([loaded, sleep(8000)]);
     await sleep(args.wait); // 等 JS 初始化与动画稳定
 
+    if (args.jsFile) args.js = fs.readFileSync(args.jsFile, 'utf8');
     if (args.js) {
       const r = await send('Runtime.evaluate', {
         expression: args.js, returnByValue: true, awaitPromise: true,
       });
-      console.log(JSON.stringify(r.result ? r.result.value : null, null, 2));
+      if (r.exceptionDetails) {
+        exitCode = 1;
+        console.error('页面脚本抛错：' + (r.exceptionDetails.exception && r.exceptionDetails.exception.description || r.exceptionDetails.text));
+      } else {
+        console.log(JSON.stringify(r.result ? r.result.value : null, null, 2));
+      }
     }
 
     if (args.shot) {
