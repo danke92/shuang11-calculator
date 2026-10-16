@@ -156,6 +156,18 @@ gh auth login          # 选 GitHub.com → SSH → 浏览器授权，令牌只�
 SSH key 需已添加到 GitHub（本机 `~/.ssh/id_ed25519` 已配好，且 `~/.ssh/config` 里让
 `github.com` 走 `ssh.github.com:443`，规避 22 端口不稳定）。
 
+> **本机执行策略默认禁止运行 `.ps1`**，所以脚本要么先放开当前会话，要么用 `-File` 方式调：
+>
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+> .\tools\publish-pages.ps1
+> # 或者
+> powershell -ExecutionPolicy Bypass -File .\tools\publish-pages.ps1
+> ```
+>
+> 两个脚本都必须存成 **UTF-8 带 BOM**：PowerShell 5.1 对没有 BOM 的 `.ps1` 按 ANSI 解码，
+> 中文注释会乱码并让解析器报「字符串缺少终止符」。
+
 ### 一键发布
 
 ```powershell
